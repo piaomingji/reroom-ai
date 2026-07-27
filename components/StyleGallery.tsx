@@ -9,12 +9,11 @@ export default function StyleGallery() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-clay">
             Styles
           </p>
-          <h2 className="font-display mt-3 text-3xl font-bold tracking-tight text-ink md:text-4xl">
-            여덟 가지 시선으로 보는 우리 집
+          <h2 className="font-display mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-ink md:text-4xl">
+            多様なスタイルによるリフォーム完成イメージ
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink-soft md:text-base">
-            정제된 미니멀부터 한옥의 고요함까지. 같은 공간이 스타일에 따라 어떻게
-            달라지는지 골라 보세요.
+            和モダンからインダストリアルまで。同じ部屋が選択したスタイルによってどのように生まれ変わるか、実際のイメージをご覧ください。
           </p>
         </Reveal>
 

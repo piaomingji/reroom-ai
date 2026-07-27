@@ -18,80 +18,56 @@ export type StyleOption = {
 };
 
 export const ROOM_TYPES: RoomType[] = [
-  { id: "living_room", label: "거실", prompt: "living room" },
-  { id: "bedroom", label: "침실", prompt: "bedroom" },
-  { id: "kitchen", label: "주방", prompt: "kitchen" },
-  { id: "bathroom", label: "욕실", prompt: "bathroom" },
-  { id: "study", label: "서재", prompt: "home office / study room" },
-  { id: "studio", label: "원룸", prompt: "studio apartment" },
+  { id: "living_room", label: "リビング", prompt: "living room" },
+  { id: "bedroom", label: "寝室", prompt: "bedroom" },
+  { id: "kitchen", label: "キッチン", prompt: "kitchen" },
+  { id: "bathroom", label: "浴室・バスルーム", prompt: "bathroom" },
+  { id: "study", label: "書斎・ホームオフィス", prompt: "home office / study room" },
+  { id: "studio", label: "ワンルーム", prompt: "studio apartment" },
 ];
 
 export const STYLES: StyleOption[] = [
   {
-    id: "modern",
-    label: "모던",
-    desc: "깔끔하고 정돈된 분위기",
-    swatch: ["#2b2b2e", "#c9c9cd", "#8a6f52"],
+    id: "wa_modern",
+    label: "和モダン",
+    desc: "和室から洋風への改修・畳とフローリングの融合",
+    swatch: ["#eae3d2", "#8c7b60", "#3d3a33"],
     prompt:
-      "sleek modern style: clean lines, neutral palette with charcoal and greige, low-profile furniture, matte finishes, statement lighting",
+      "Japanese modern style: fusion of traditional Japanese aesthetics and modern design. Light tatami mats or modern wood flooring, low-profile wooden furniture, shoji or wood slats, washi paper pendant lights, natural earthy tones mixed with contemporary elements",
   },
   {
-    id: "minimal",
-    label: "미니멀",
-    desc: "단순함과 절제의 미학",
-    swatch: ["#f4f2ee", "#d8d4cc", "#9a958a"],
+    id: "scandinavian_natural",
+    label: "北欧ナチュラル",
+    desc: "明るい木目と白を基調とした温かみのある空間",
+    swatch: ["#f4f2ee", "#b9a284", "#5f6f5e"],
     prompt:
-      "minimalist style: pared-down furnishings, warm white walls, hidden storage, soft diffuse light, generous negative space",
+      "Scandinavian natural style: bright light oak wood finishes, white and cream walls, cozy wool and linen textiles, minimalist and functional wooden furniture, warm lighting, touches of soft green or neutral colors",
   },
   {
-    id: "scandinavian",
-    label: "북유럽",
-    desc: "따뜻하고 내추럴한 감성",
-    swatch: ["#e9e2d5", "#b9a284", "#5f6f5e"],
+    id: "luxury_modern",
+    label: "ラグジュアリーモダン",
+    desc: "高級感のあるホテルライクな暮らし",
+    swatch: ["#1f2430", "#9c8455", "#e5e5e5"],
     prompt:
-      "Scandinavian style: light oak wood, cozy wool and linen textiles, white and sage accents, hygge atmosphere, potted greenery",
+      "luxury hotel-like modern style: premium marble walls or floors, brass and gold metallic accents, plush fabrics, sophisticated ambient lighting, dark neutral colors, sleek high-end contemporary furniture",
+  },
+  {
+    id: "simple_accent",
+    label: "シンプルアクセント",
+    desc: "壁紙1面変更・クロス張替えによる部分リフォーム",
+    swatch: ["#4b6584", "#d1d8e0", "#ffffff"],
+    prompt:
+      "simple accent wall style: one accent wallpaper wall (such as muted slate blue, sage green, or charcoal gray) with remaining walls in clean matte white, matching modern minimalist furniture and flooring, clean and fresh look",
   },
   {
     id: "industrial",
-    label: "인더스트리얼",
-    desc: "콘크리트와 철제의 조화",
+    label: "インダストリアル",
+    desc: "カフェ風・ヴィンテージ感のあるおしゃれな内装",
     swatch: ["#4a4a4a", "#7d6a58", "#2f3540"],
     prompt:
-      "industrial loft style: exposed concrete texture, black steel frames, leather and reclaimed wood furniture, Edison bulb lighting",
-  },
-  {
-    id: "japandi",
-    label: "재팬디",
-    desc: "동양적 미와 서양식 실용성",
-    swatch: ["#ded5c4", "#8c7b60", "#3d3a33"],
-    prompt:
-      "Japandi style: low wooden furniture, wabi-sabi ceramics, rice-paper lighting, muted earth tones, calm uncluttered balance",
-  },
-  {
-    id: "mid_century",
-    label: "미드센추리",
-    desc: "레트로한 컬러와 나무 질감",
-    swatch: ["#b0562f", "#e0b04e", "#3f5748"],
-    prompt:
-      "mid-century modern style: walnut furniture with tapered legs, mustard and teal accent colors, geometric patterns, retro lighting",
-  },
-  {
-    id: "hanok",
-    label: "한옥",
-    desc: "전통적인 선과 나무의 편안함",
-    swatch: ["#c7b299", "#6e4f33", "#eae3d2"],
-    prompt:
-      "modern Korean hanok style: warm wooden beams, hanji paper screens, low traditional furniture, natural linen, serene earthy palette",
-  },
-  {
-    id: "hotel_lounge",
-    label: "호텔 라운지",
-    desc: "고급스럽고 웅장한 디자인",
-    swatch: ["#1f2430", "#9c8455", "#5c5148"],
-    prompt:
-      "luxury hotel lounge style: plush velvet seating, brass and marble details, layered ambient lighting, dark sophisticated palette",
+      "industrial cafe vintage style: exposed dark concrete or brick textures, black steel or iron frames, rustic reclaimed dark wood furniture, vintage Edison bulb light fixtures, brown leather seating",
   },
 ];
 
-export const FREE_GENERATIONS = 2;
-export const DAILY_IP_LIMIT = 10;
+export const FREE_GENERATIONS = 5;
+export const DAILY_IP_LIMIT = 5;

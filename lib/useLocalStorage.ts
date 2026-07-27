@@ -11,6 +11,7 @@ const STORAGE_EVENT = 'reroom:storage';
  */
 export function useLocalStorage(key: string, fallback: string) {
   const subscribe = useCallback((onChange: () => void) => {
+    if (typeof window === 'undefined') return () => {};
     window.addEventListener(STORAGE_EVENT, onChange);
     window.addEventListener('storage', onChange);
     return () => {
@@ -21,14 +22,31 @@ export function useLocalStorage(key: string, fallback: string) {
 
   const value = useSyncExternalStore(
     subscribe,
-    () => localStorage.getItem(key) ?? fallback,
+    () => {
+      try {
+        if (typeof window !== 'undefined') {
+          return localStorage.getItem(key) ?? fallback;
+        }
+      } catch (e) {
+        console.warn('localStorage read blocked or failed:', e);
+      }
+      return fallback;
+    },
     () => fallback
   );
 
   const setValue = useCallback(
     (next: string) => {
-      localStorage.setItem(key, next);
-      window.dispatchEvent(new Event(STORAGE_EVENT));
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(key, next);
+        }
+      } catch (e) {
+        console.warn('localStorage write blocked or failed:', e);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(STORAGE_EVENT));
+      }
     },
     [key]
   );

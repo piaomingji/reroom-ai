@@ -11,13 +11,13 @@ export default function StyleCards() {
   };
 
   return (
-    <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {STYLES.map((style, i) => (
-        <Reveal key={style.id} delay={i * 60}>
+        <Reveal key={style.id} delay={i * 60} className="h-full flex flex-col">
           <button
             type="button"
             onClick={() => pickStyle(style.id)}
-            className="group flex h-full w-full cursor-pointer flex-col justify-between rounded-2xl border border-line bg-paper p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-lift"
+            className="group flex h-full w-full cursor-pointer flex-col justify-start rounded-2xl border border-line bg-paper p-5 sm:p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-lift"
           >
             <div className="flex items-center gap-1.5">
               {style.swatch.map((color) => (
@@ -28,15 +28,15 @@ export default function StyleCards() {
                 />
               ))}
             </div>
-            <div className="mt-8">
-              <h3 className="font-display text-lg font-bold text-ink">
+            <div className="mt-6 flex flex-1 flex-col">
+              <h3 className="font-display text-base font-bold text-ink leading-snug">
                 {style.label}
               </h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+              <p className="mt-2 text-xs leading-relaxed text-ink-soft break-words">
                 {style.desc}
               </p>
-              <p className="mt-4 text-xs font-semibold text-clay opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                이 스타일로 디자인하기 →
+              <p className="mt-auto pt-4 text-xs font-semibold text-clay opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                このスタイルでデザインする →
               </p>
             </div>
           </button>

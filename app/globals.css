@@ -17,7 +17,7 @@
 
   --font-sans: "Pretendard Variable", "Pretendard", -apple-system,
     BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  --font-display: var(--font-noto-serif), "Noto Serif KR", ui-serif, serif;
+  --font-display: var(--font-noto-serif), "Noto Serif JP", ui-serif, serif;
 
   --shadow-lift: 0 1px 2px rgb(33 27 19 / 0.04), 0 8px 24px rgb(33 27 19 / 0.06);
   --shadow-deep: 0 2px 6px rgb(33 27 19 / 0.08), 0 24px 64px rgb(33 27 19 / 0.16);
@@ -59,7 +59,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss05";
-  word-break: keep-all; /* 한국어 어절 단위 줄바꿈 */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 /* 종이 질감 그레인 오버레이 */
@@ -75,8 +76,8 @@ body::after {
 
 /* 스크롤 리빌 */
 .reveal {
-  opacity: 0;
-  transform: translateY(28px);
+  opacity: 1;
+  transform: translateY(0);
   transition: opacity 0.9s var(--ease-premium), transform 0.9s var(--ease-premium);
 }
 .reveal.is-visible {

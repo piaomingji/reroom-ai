@@ -17,18 +17,28 @@ export default function Reveal({ children, className = '', delay = 0 }: RevealPr
     const el = ref.current;
     if (!el) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('is-visible');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.12 }
-    );
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      el.classList.add('is-visible');
+      return;
+    }
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    try {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            el.classList.add('is-visible');
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.01 }
+      );
+
+      observer.observe(el);
+      return () => observer.disconnect();
+    } catch (e) {
+      console.warn('IntersectionObserver failed, falling back to visible:', e);
+      el.classList.add('is-visible');
+    }
   }, []);
 
   return (

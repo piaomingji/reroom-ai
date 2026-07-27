@@ -2,9 +2,9 @@ import CompareSlider from './CompareSlider';
 import Reveal from './Reveal';
 
 const STATS = [
-  { value: '10초', label: '평균 생성 시간' },
-  { value: '8가지', label: '인테리어 스타일' },
-  { value: '2회', label: '무료 체험' },
+  { value: '10秒', label: '平均生成時間' },
+  { value: '5種類', label: 'リフォームスタイル' },
+  { value: '通算5回', label: '無料体験' },
 ];
 
 export default function Hero() {
@@ -20,18 +20,17 @@ export default function Hero() {
         <Reveal className="flex flex-col items-center">
           <p className="mb-6 flex items-center gap-2 rounded-full border border-line bg-paper-raised px-4 py-1.5 text-xs font-medium tracking-wide text-ink-soft">
             <span className="h-1.5 w-1.5 rounded-full bg-clay" />
-            AI 인테리어 리디자인 스튜디오
+            AIリフォーム・インテリア生成スタジオ
           </p>
 
           <h1 className="font-display max-w-3xl text-4xl font-bold leading-[1.3] tracking-tight text-ink md:text-6xl md:leading-[1.25]">
-            사진 한 장으로,
+            写真1枚で、
             <br />
-            공간의 <em className="not-italic text-clay">분위기</em>를 다시 짓다
+            空間の <em className="not-italic text-clay">完成予想図</em> を瞬時に描く
           </h1>
 
           <p className="mt-7 max-w-xl text-base leading-relaxed text-ink-soft md:text-lg">
-            방 사진을 올리고 원하는 스타일을 고르면, AI가 10초 만에 공간을 다시
-            디자인합니다. 벽과 창문 구조는 그대로, 분위기는 완전히 새롭게.
+            リフォーム前のお部屋の写真をアップロードしてスタイルを選択するだけで、AIが約10秒で完成予想図を作成。間取りや窓の位置、お部屋の構造はそのままに、新しい空間デザインをご提案します。
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -39,19 +38,19 @@ export default function Hero() {
               href="#studio"
               className="rounded-full bg-ink px-8 py-4 text-sm font-semibold text-paper shadow-lift transition-all duration-300 hover:-translate-y-0.5 hover:bg-clay"
             >
-              지금 무료로 디자인하기
+              無料で完成予想図を作る
             </a>
             <a
               href="#styles"
               className="rounded-full border border-line-strong bg-paper-raised px-8 py-4 text-sm font-semibold text-ink transition-all duration-300 hover:border-ink"
             >
-              스타일 둘러보기
+              スタイルを見る
             </a>
           </div>
 
           <dl className="mt-12 flex items-center divide-x divide-line">
             {STATS.map((stat) => (
-              <div key={stat.label} className="px-6 sm:px-9">
+              <div key={stat.label} className="px-3 sm:px-9">
                 <dt className="sr-only">{stat.label}</dt>
                 <dd className="font-display text-xl font-bold text-ink md:text-2xl">
                   {stat.value}
@@ -69,12 +68,12 @@ export default function Hero() {
           <CompareSlider
             beforeSrc="/living_room_before.png"
             afterSrc="/living_room_after.png"
-            beforeAlt="리디자인 전 거실"
-            afterAlt="재팬디 스타일로 리디자인된 거실"
+            beforeAlt="リフォーム前のご提案写真"
+            afterAlt="完成予想図（和モダン）"
             priority
           />
           <p className="mt-4 text-xs text-ink-faint">
-            핸들을 좌우로 드래그해 재팬디 스타일 변신을 직접 확인해 보세요.
+            スライダーを左右にドラッグして、リフォーム前後の変化を確認できます。
           </p>
         </Reveal>
       </div>

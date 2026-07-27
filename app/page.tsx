@@ -3,6 +3,7 @@ import Hero from '@/components/Hero';
 import StyleGallery from '@/components/StyleGallery';
 import HowItWorks from '@/components/HowItWorks';
 import Studio from '@/components/Studio';
+import Pricing from '@/components/Pricing';
 import Faq from '@/components/Faq';
 import Footer from '@/components/Footer';
 
@@ -15,6 +16,7 @@ export default function Home() {
         <StyleGallery />
         <HowItWorks />
         <Studio />
+        <Pricing />
         <Faq />
       </main>
       <Footer />

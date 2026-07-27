@@ -106,7 +106,7 @@ export default function CompareSlider({
         <button
           type="button"
           role="slider"
-          aria-label="비포/애프터 비교 슬라이더"
+          aria-label="ビフォー・アフター比較スライダー"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(pos)}

@@ -3,18 +3,18 @@ import Reveal from './Reveal';
 const STEPS = [
   {
     no: '01',
-    title: '사진 업로드',
-    desc: '바꾸고 싶은 공간의 사진을 올려 주세요. 브라우저에서 자동으로 최적화되어 안전하게 전송됩니다.',
+    title: '写真のアップロード',
+    desc: 'リフォームしたいお部屋の写真をアップロードします。ブラウザ側で自動的に最適化され、安全に送信されます。',
   },
   {
     no: '02',
-    title: '공간과 스타일 선택',
-    desc: '거실부터 원룸까지 6가지 공간, 모던부터 한옥까지 8가지 스타일. 취향대로 조합하세요.',
+    title: '空間タイプとスタイルの選択',
+    desc: '空間タイプとスタイルを選択します。スタイルを選択しなくても、ご自身で用意した床材や壁紙などの素材画像をアップロードして、オリジナルの組み合わせでデザインが変化する様子を試すことができます。',
   },
   {
     no: '03',
-    title: '10초 뒤, 새로운 방',
-    desc: '벽·창문·구도는 그대로 두고 가구와 조명, 색감만 바뀐 고화질 렌더링이 완성됩니다.',
+    title: '約10秒で完成予想図を作成',
+    desc: '間取り、窓、ドアなどの構造は極力そのまま維持し、壁紙、床材、家具、照明だけを一新した高画質な予想図が生成されます。',
   },
 ];
 
@@ -26,8 +26,8 @@ export default function HowItWorks() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-clay">
             How it works
           </p>
-          <h2 className="font-display mt-3 text-3xl font-bold tracking-tight text-ink md:text-4xl">
-            세 단계면 충분합니다
+          <h2 className="font-display mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-ink md:text-4xl">
+            わずか3ステップで作成可能
           </h2>
         </Reveal>
 

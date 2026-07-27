@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Noto_Serif_KR } from "next/font/google";
+import { Noto_Serif_JP } from "next/font/google";
 import "./globals.css";
 
-const notoSerif = Noto_Serif_KR({
-  weight: ["400", "600", "700", "900"],
+const notoSerif = Noto_Serif_JP({
+  weight: ["400", "700", "900"],
   subsets: ["latin"],
   variable: "--font-noto-serif",
   display: "swap",
@@ -11,24 +11,24 @@ const notoSerif = Noto_Serif_KR({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://reroom-ai.vercel.app"),
-  title: "ReRoom AI — 사진 한 장으로 완성하는 AI 인테리어 리디자인",
+  title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
   description:
-    "방 사진을 올리고 스타일을 고르면, AI가 10초 만에 공간을 다시 디자인합니다. 벽과 창문 구조는 그대로, 분위기는 완전히 새롭게.",
+    "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒でリフォーム後の完成予想図を作成。間取りや窓の位置はそのままに、新しい空間デザインをご提案します。",
   openGraph: {
-    title: "ReRoom AI — 사진 한 장으로 완성하는 AI 인테리어 리디자인",
+    title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
     description:
-      "방 사진을 올리고 스타일을 고르면, AI가 10초 만에 공간을 다시 디자인합니다.",
+      "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒で完成予想図を作成します。",
     url: "https://reroom-ai.vercel.app",
-    siteName: "ReRoom AI",
+    siteName: "ミセルリフォーム",
     images: [
       {
         url: "/living_room_after.png",
         width: 1200,
         height: 1200,
-        alt: "ReRoom AI 재팬디 스타일 리디자인 쇼케이스",
+        alt: "ミセルリフォーム 和モダンリフォーム提案ショーケース",
       },
     ],
-    locale: "ko_KR",
+    locale: "ja_JP",
     type: "website",
   },
   icons: {
@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`h-full antialiased ${notoSerif.variable}`}>
+    <html lang="ja" className={`h-full antialiased ${notoSerif.variable}`}>
       <body className="min-h-full flex flex-col bg-paper text-ink font-sans">
         {children}
       </body>
