@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
   description:
     "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒でリフォーム後の完成予想図を作成。間取りや窓の位置はそのままに、新しい空間デザインをご提案します。",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ReRoomAI",
+  },
   openGraph: {
     title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
     description:
@@ -32,9 +38,12 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
   },
 };
+
+import PwaRegister from "@/components/PwaRegister";
 
 export default function RootLayout({
   children,
@@ -45,6 +54,7 @@ export default function RootLayout({
     <html lang="ja" className={`h-full antialiased ${notoSerif.variable}`}>
       <body className="min-h-full flex flex-col bg-paper text-ink font-sans">
         {children}
+        <PwaRegister />
       </body>
     </html>
   );
