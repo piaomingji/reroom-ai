@@ -90,7 +90,7 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleCheckout = async (planId: 'quota' | 'pro') => {
+  const handleCheckout = async (planId: 'quota' | 'pro' | 'business') => {
     setLoadingPlan(planId);
     setErrorMsg(null);
 
@@ -157,7 +157,7 @@ export default function Pricing() {
           </Reveal>
         )}
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3 max-w-5xl mx-auto items-stretch">
+        <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto items-stretch">
           {/* フリープラン */}
           <Reveal delay={100} className="w-full flex">
             <div className="w-full flex flex-col rounded-3xl border border-line bg-paper p-6 sm:p-8">
@@ -233,6 +233,27 @@ export default function Pricing() {
               isPopular={true}
               onClick={() => handleCheckout('pro')}
               isLoading={loadingPlan === 'pro'}
+            />
+          </Reveal>
+
+          {/* 法人プランサブスク */}
+          <Reveal delay={250} className="w-full flex">
+            <PlanCard
+              title="法人プラン"
+              price="¥9,800"
+              period="月"
+              description="複数メンバーの営業ツールとして導入・共同利用したい企業様に"
+              features={[
+                '最大5名様まで同時ログイン・共有利用可',
+                '1日最大500回まで生成可能（毎日リセット）',
+                'プレミアム超高速生成（最優先処理）',
+                '高画質レンダリング＆保存',
+                '商用提案資料への自由な利用',
+                'サブスク自動更新・いつでも解約可',
+              ]}
+              buttonText="法人プランに登録する"
+              onClick={() => handleCheckout('business')}
+              isLoading={loadingPlan === 'business'}
             />
           </Reveal>
         </div>

@@ -172,8 +172,8 @@ export default function Studio() {
       return;
     }
 
-    // Limit check for non-BYOK and non-pro users
-    if (!byokMode && userPlan !== 'pro' && freeCount <= 0) {
+    // Limit check for non-BYOK and non-pro/business users
+    if (!byokMode && userPlan !== 'pro' && userPlan !== 'business' && freeCount <= 0) {
       setShowUpgradeModal(true);
       return;
     }
@@ -189,7 +189,7 @@ export default function Studio() {
     const startTime = Date.now();
 
     // Determine if the user is premium
-    const isPremiumUser = userPlan === 'pro' || (userPlan === 'quota' && freeCount > 0);
+    const isPremiumUser = userPlan === 'pro' || userPlan === 'business' || (userPlan === 'quota' && freeCount > 0);
 
     try {
       const res = await fetch('/api/generate', {
@@ -783,6 +783,8 @@ export default function Studio() {
                         <span>会員ステータス:</span>
                         {userPlan === 'pro' ? (
                           <span className="text-clay font-bold animate-pulse">PROプラン（使い放題）</span>
+                        ) : userPlan === 'business' ? (
+                          <span className="text-clay-deep font-bold animate-pulse">法人プラン（使い放題）</span>
                         ) : userPlan === 'quota' ? (
                           <span className="text-ink font-bold text-ink-strong">追加プラン（残り {freeCount}回）</span>
                         ) : (
