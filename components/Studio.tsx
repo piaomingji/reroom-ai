@@ -222,7 +222,7 @@ export default function Studio() {
 
       // 画面の高さ縮小に伴う料金プランへの意図しないスクロールジャンプを防ぎ、完成予想図画面へフォーカス
       setTimeout(() => {
-        document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
 
       if (!byokMode && userPlan !== 'pro') {
@@ -329,7 +329,7 @@ export default function Studio() {
           <div className="rounded-3xl border border-line bg-paper-raised p-4 sm:p-6 shadow-lift md:p-10">
             {resultImage && uploadedImage ? (
               /* ── 生成完了結果 ── */
-              <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 animate-fade-in">
+              <div id="preview-section" className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 animate-fade-in scroll-mt-24">
                 <div className="text-center">
                   <span className="rounded-full bg-clay px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-paper">
                     Redesign Complete
