@@ -48,6 +48,8 @@ export default function Studio() {
   const [byokModeRaw] = useLocalStorage('reroom_byok_mode', 'false');
   const byokMode = byokModeRaw === 'true';
   const [byokKey] = useLocalStorage('reroom_byok_key', '');
+  // 同時ログイン監視用セッションID
+  const [sessionId, setSessionId] = useState<string>('');
 
   // 생성 상태
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +59,16 @@ export default function Studio() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    // セッションIDの読み込みまたは生成
+    if (typeof window !== 'undefined') {
+      let currentSessId = localStorage.getItem('reroom_session_id');
+      if (!currentSessId) {
+        currentSessId = `SESS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        localStorage.setItem('reroom_session_id', currentSessId);
+      }
+      setSessionId(currentSessId);
+    }
+
     // 스타일 ギャラリーカードからスタイルを事前に選択した時
     const onPickStyle = (e: Event) => {
       const styleId = (e as CustomEvent<string>).detail;
@@ -209,11 +221,20 @@ export default function Studio() {
           isPremiumUser,
           userPlan,
           quotaRemaining: freeCount,
+          sessionId,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 403 && data.error === 'MULTIPLE_SESSIONS_DETECTED') {
+          localStorage.setItem('reroom_user_plan', 'free');
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new Event('wallai:plan_updated'));
+          alert('別端末で同時ログインが検出されたため、この端末のセッションが終了しました。複数名で同時に利用する場合は「法人プラン」をご検討ください。');
+          window.location.reload();
+          return;
+        }
         throw new Error(data.error || '完成予想図の生成に失敗しました。');
       }
 

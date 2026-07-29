@@ -12,6 +12,9 @@ const googleUserCounts = new Map<string, number>();
 // PRO 회원 안전대책 (일일 100회 제한 & 10秒 연속생성 제한) 추적 맵
 const proUsageTracker = new Map<string, { dailyCount: number; resetAt: number; lastGeneratedAt: number }>();
 
+// 有料アカウントの同時ログインセッション制限追跡マップ (キー: finalUserIdentifier, 値: sessionId)
+const activeSessions = new Map<string, string>();
+
 export async function POST(req: NextRequest) {
   try {
     // Sanitize headers to prevent ByteString conversion crashes in any outgoing runtime fetch calls
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
       userEmail,
       isPremiumUser,
       userPlan,
+      sessionId,
     } = await req.json();
 
     if (!image || typeof image !== 'string') {
@@ -123,6 +127,19 @@ export async function POST(req: NextRequest) {
     const isDemoMode = !byokKey;
 
     if (isProUser && isDemoMode) {
+      // 0. 同時ログイン（複数セッション）の防止制御 (Proプランのみ適用、法人プランは共有可)
+      if (userPlan === 'pro' && finalUserIdentifier && sessionId) {
+        const activeSessionId = activeSessions.get(finalUserIdentifier);
+        if (activeSessionId && activeSessionId !== sessionId) {
+          return NextResponse.json(
+            { error: 'MULTIPLE_SESSIONS_DETECTED' },
+            { status: 403 }
+          );
+        }
+        // セッションIDの登録・更新
+        activeSessions.set(finalUserIdentifier, sessionId);
+      }
+
       const now = Date.now();
       let record = proUsageTracker.get(trackingKey);
 
