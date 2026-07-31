@@ -4,8 +4,8 @@ import { blogPosts } from '@/lib/blog';
 import Link from 'next/link';
 
 export const metadata = {
-  title: '外壁リフォームお役立ちブログ - ミセルリフォーム',
-  description: '外壁リフォームの色選びやシミュレーション活用術など、理想のマイホームづくりのためのお役立ち情報を発信します。',
+  title: 'お部屋リフォームお役立ちブログ - ミセルリフォーム',
+  description: 'お部屋の壁紙・クロス選びやシミュレーション活用術など、理想のインテリアづくりのためのお役立ち情報を発信します。',
 };
 
 export default function BlogListPage() {
@@ -16,10 +16,10 @@ export default function BlogListPage() {
         <div className="mx-auto max-w-5xl px-6 py-20">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h1 className="font-display text-3xl font-bold tracking-tight text-ink md:text-4xl">
-              外壁リフォームお役立ちブログ
+              お部屋リフォームお役立ちブログ
             </h1>
             <p className="mt-4 text-sm text-ink-soft">
-              理想の外壁カラーを見つけるためのヒントや、色選びで失敗しないためのノウハウをお届けします。
+              理想のお部屋カラーや壁紙・インテリアを見つけるためのヒントや、色選びで失敗しないためのノウハウをお届けします。
             </p>
           </div>
 
