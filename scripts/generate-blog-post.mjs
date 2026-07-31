@@ -35,28 +35,23 @@ if (!GEMINI_API_KEY) {
 const topics = [
   {
     keyword: '壁紙 リフォーム 失敗 アクセントクロス',
-    titleHint: 'アクセントクロス選びで後悔しない！失敗事例から学ぶおしゃれなお部屋の色の決め方',
-    eyecatch: '/blog/interior-color-guide.jpg'
+    titleHint: 'アクセントクロス選びで後悔しない！失敗事例から学ぶおしゃれなお部屋の色の決め方'
   },
   {
     keyword: 'リビング クロス 選び方 明るい',
-    titleHint: '【2026決定版】リビングを広く明るく見せる壁紙クロスの選び方とおすすめ定番カラー',
-    eyecatch: '/blog/interior-color-guide.jpg'
+    titleHint: '【2026決定版】リビングを広く明るく見せる壁紙クロスの選び方とおすすめ定番カラー'
   },
   {
     keyword: '部屋 狭い 広く見せる 壁紙',
-    titleHint: '狭い子ども部屋や寝室を劇的に広く見せる！壁紙選び・配色のコツと視覚トリック',
-    eyecatch: '/blog/interior-color-guide.jpg'
+    titleHint: '狭い子ども部屋や寝室を劇的に広く見せる！壁紙選び・配色のコツと視覚トリック'
   },
   {
     keyword: '北欧風 インテリア 壁紙 コーディネート',
-    titleHint: '憧れの北欧風インテリアを実現する！壁紙（クロス）の色選びと家具の組み合わせ実例',
-    eyecatch: '/blog/interior-color-guide.jpg'
+    titleHint: '憧れの北欧風インテリアを実現する！壁紙（クロス）の色選びと家具の組み合わせ実例'
   },
   {
     keyword: '和モダン 壁紙 おしゃれ 張り替え',
-    titleHint: '和室をモダンでおしゃれな空間に変身させる！和モダン壁紙クロスの選び方テクニック',
-    eyecatch: '/blog/interior-color-guide.jpg'
+    titleHint: '和室をモダンでおしゃれな空間に変身させる！和モダン壁紙クロスの選び方テクニック'
   }
 ];
 
@@ -71,7 +66,7 @@ async function generateArticle() {
 
 【満たすべき条件】
 1. 読者の悩みや疑問を解決する信頼性の高い情報を含め、自然な日本語で執筆してください。
-2. 見出し（h2, h3）、太字（<strong>）、順不同リスト（<ul> <li>）などを使って綺麗にマークアップされたHTML本文（contentHtml）にしてください。
+2. 見出し（h2, h3）、太字（<strong>）、順一度リスト（<ul> <li>）などを使って綺麗にマークアップされたHTML本文（contentHtml）にしてください。
 3. 記事内の後半に、当サービス（ミセルリフォーム）のAIお部屋リフォームシミュレーションを紹介し、以下のCTAリンクを「必ず」中央寄せで設置してください：
    <p class="text-center my-8">
      <a href="/?contact=false" class="inline-flex items-center justify-center rounded-full bg-clay px-8 py-4 text-sm font-bold text-paper hover:bg-ink transition-all hover:scale-105 shadow-lg gap-2">
@@ -106,18 +101,80 @@ async function generateArticle() {
   return JSON.parse(textContent);
 }
 
+// 記事の内容に沿ったアイキャッチ画像を生成する関数 (Imagen 3がエラーの場合はUnsplashのフリー画像をフォールバック)
+async function generateImage(title, excerpt) {
+  const promptForImagePrompt = `
+以下のブログ記事のタイトルと概要に合致する、美しくプロフェッショナルな画像生成AI用のプロンプト（英語）を1行で作成してください。
+余計な説明文や挨拶は一切省き、プロンプトテキストのみを返却してください。
+
+タイトル: ${title}
+概要: ${excerpt}
+`;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const promptResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: promptForImagePrompt
+    });
+
+    const imagePrompt = promptResponse.text.trim();
+    console.log(`Generated Image Prompt: ${imagePrompt}`);
+
+    console.log('Attempting to generate image via Imagen 3...');
+    // Imagenモデルで画像を生成
+    const imageResponse = await ai.models.generateImages({
+      model: 'imagen-3.0-generate-002',
+      prompt: `${imagePrompt}, professional interior design photography, beautiful residential living room wall paint and cozy furniture, daytime daylight, highly detailed, blog header banner`,
+      config: {
+        numberOfImages: 1,
+        outputMimeType: 'image/jpeg',
+        aspectRatio: '16:9'
+      }
+    });
+
+    const base64Image = imageResponse.generatedImages[0].image.imageBytes;
+    return { type: 'buffer', data: Buffer.from(base64Image, 'base64') };
+  } catch (error) {
+    console.log('Imagen 3 generation failed or not supported. Falling back to high-quality Unsplash image...', error.message);
+    
+    // 内装用の高画質Unsplash画像リスト
+    const fallbackImages = [
+      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1617806118233-18e1db207f62?auto=format&fit=crop&w=1200&q=80'
+    ];
+    const selectedUrl = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+    return { type: 'url', data: selectedUrl };
+  }
+}
+
 async function main() {
   try {
     console.log('Generating AI Blog post...');
     const article = await generateArticle();
     
-    // アイキャッチ画像の設定
-    article.eyecatch = selectedTopic.eyecatch;
+    // 画像の自動生成
+    console.log('Generating matching eyecatch image...');
+    const resultImage = await generateImage(article.title, article.excerpt);
+    
+    if (resultImage.type === 'buffer') {
+      const imageFilename = `${article.slug}.jpg`;
+      const imagePath = path.join(process.cwd(), 'public/blog', imageFilename);
+      fs.writeFileSync(imagePath, resultImage.data);
+      console.log(`Saved generated eyecatch image to: public/blog/${imageFilename}`);
+      article.eyecatch = `/blog/${imageFilename}`;
+    } else {
+      console.log(`Using fallback Unsplash image URL: ${resultImage.data}`);
+      article.eyecatch = resultImage.data;
+    }
+    
     // 本日の日付
     const today = new Date().toISOString().split('T')[0];
     article.date = today;
 
-    console.log(`Generated: ${article.title}`);
+    console.log(`Generated article title: ${article.title}`);
 
     // lib/blog.ts の更新
     const filePath = path.join(process.cwd(), 'lib/blog.ts');
