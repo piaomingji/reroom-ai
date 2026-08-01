@@ -22,10 +22,33 @@ export async function generateMetadata({ params }: PageProps) {
       title: '記事が見つかりません - ミセルリフォーム',
     };
   }
+
+  const siteUrl = 'https://reroom-ai-rust.vercel.app';
+  const imageUrl = post.eyecatch.startsWith('http') 
+    ? post.eyecatch 
+    : `${siteUrl}${post.eyecatch}`;
+
   return {
     title: `${post.title} - ミセルリフォーム`,
     description: post.excerpt,
     keywords: post.keywords.join(', '),
+    openGraph: {
+      title: `${post.title} - ミセルリフォーム`,
+      description: post.excerpt,
+      images: [
+        {
+          url: imageUrl,
+          alt: post.title,
+        }
+      ],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${post.title} - ミセルリフォーム`,
+      description: post.excerpt,
+      images: [imageUrl],
+    }
   };
 }
 
