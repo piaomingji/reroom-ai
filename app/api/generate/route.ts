@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { ROOM_TYPES, STYLES } from '@/lib/constants';
+import { createClient } from '@vercel/kv';
+
+const kv = createClient({
+  url: process.env.KV_REST_API_URL || process.env.REDIS_REST_API_URL || "",
+  token: process.env.KV_REST_API_TOKEN || process.env.REDIS_REST_API_TOKEN || "",
+});
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-// IP 및 Google 계정의 누적 생성 횟수를 추적하기 위한 인메모리 맵 (통산 5회 제한, 리셋 없음)
-const ipCounts = new Map<string, number>();
-const googleUserCounts = new Map<string, number>();
 
 // PRO 회원 안전대책 (일일 100회 제한 & 10秒 연속생성 제한) 추적 맵
 const proUsageTracker = new Map<string, { dailyCount: number; resetAt: number; lastGeneratedAt: number }>();
@@ -191,8 +193,11 @@ export async function POST(req: NextRequest) {
 
     const isPremium = !!isPremiumUser; // Check premium status sent from client
     if (isDemoMode && !isPremium) {
-      const currentIpCount = ipCounts.get(ip) || 0;
-      const currentGoogleCount = finalUserIdentifier ? (googleUserCounts.get(finalUserIdentifier) || 0) : 0;
+      const ipKey = `reroom-ai:ip:${ip}`;
+      const googleKey = finalUserIdentifier ? `reroom-ai:google:${finalUserIdentifier}` : null;
+
+      const currentIpCount = (await kv.get<number>(ipKey)) || 0;
+      const currentGoogleCount = googleKey ? ((await kv.get<number>(googleKey)) || 0) : 0;
 
       if (currentIpCount >= 5 || currentGoogleCount >= 5) {
         return NextResponse.json(
@@ -356,15 +361,27 @@ Do not change the structure of the room. High-quality professional interior desi
       );
     }
 
-    if (isDemoMode) {
-      // IP 주소 기준 누적 횟수 증가
-      const newIpCount = (ipCounts.get(ip) || 0) + 1;
-      ipCounts.set(ip, newIpCount);
+    if (isDemoMode && !isPremium) {
+      // IP address rate limiting with 72-hour reset (259200 seconds)
+      const ipKey = `reroom-ai:ip:${ip}`;
+      const currentIpCount = (await kv.get<number>(ipKey)) || 0;
+      if (currentIpCount === 0) {
+        await kv.set(ipKey, 1, { ex: 72 * 60 * 60 });
+      } else {
+        const ttl = await kv.ttl(ipKey);
+        await kv.set(ipKey, currentIpCount + 1, ttl > 0 ? { ex: ttl } : { ex: 72 * 60 * 60 });
+      }
 
-      // Google 계정 기준 누적 횟수 증가
+      // Google account rate limiting with 72-hour reset
       if (finalUserIdentifier) {
-        const newGoogleCount = (googleUserCounts.get(finalUserIdentifier) || 0) + 1;
-        googleUserCounts.set(finalUserIdentifier, newGoogleCount);
+        const googleKey = `reroom-ai:google:${finalUserIdentifier}`;
+        const currentGoogleCount = (await kv.get<number>(googleKey)) || 0;
+        if (currentGoogleCount === 0) {
+          await kv.set(googleKey, 1, { ex: 72 * 60 * 60 });
+        } else {
+          const ttl = await kv.ttl(googleKey);
+          await kv.set(googleKey, currentGoogleCount + 1, ttl > 0 ? { ex: ttl } : { ex: 72 * 60 * 60 });
+        }
       }
 
       // PRO 회원 생성 기록 업데이트 (누적 횟수 증가 및 최종 생성 시각 업데이트)
