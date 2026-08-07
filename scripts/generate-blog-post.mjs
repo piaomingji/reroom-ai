@@ -178,18 +178,42 @@ Requirements for the generated prompt:
 3. Specify realistic lighting (e.g., "warm afternoon sunlight", "bright daytime daylight") and setting (e.g., "clean room", "minimalist decoration").
 4. Use interior photography style keywords: "professional interior design photography, modern Japanese residential interior, detailed texture, 8k resolution".
 5. Do NOT include any text, overlays, UI elements, signs, or people in the image.
-6. The prompt must be in English and output ONLY the prompt text, without any introductory or concluding remarks.
+
+Also, provide exactly 3 simple English keywords that best describe this room for search on Unsplash (e.g. "bedroom,wallpaper,relax" or "kitchen,interior,modern").
+
+Return the result strictly in this JSON format:
+{
+  "imagePrompt": "The detailed English prompt for the image generator",
+  "unsplashKeywords": "3 comma-separated English keywords for search"
+}
 `;
+
+  let unsplashKeywords = 'interior,room';
 
   try {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     const promptResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: promptForImagePrompt
+      contents: promptForImagePrompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: {
+            imagePrompt: { type: 'string' },
+            unsplashKeywords: { type: 'string' }
+          },
+          required: ['imagePrompt', 'unsplashKeywords']
+        }
+      }
     });
 
-    const imagePrompt = promptResponse.text.trim();
+    const parsedResponse = JSON.parse(promptResponse.text.trim());
+    const imagePrompt = parsedResponse.imagePrompt;
+    unsplashKeywords = parsedResponse.unsplashKeywords;
+    
     console.log(`Generated Image Prompt: ${imagePrompt}`);
+    console.log(`Generated Unsplash Keywords: ${unsplashKeywords}`);
 
     console.log('Attempting to generate image via Imagen 3...');
     // Imagenモデルで画像を生成
@@ -216,10 +240,8 @@ Requirements for the generated prompt:
     
     // ダイナミックに生成されたトピックの場合、キーワードをもとにUnsplashから動的に合致する画像URLを作成
     // 同一画像が他の記事で使い回されないよう、クエリパラメータに一意の `sig=${slug}` を付与して一意性を担保
-    const queryKeywords = keywords && keywords.length > 0 
-      ? keywords.filter(k => k !== 'ReRoomAI' && k !== 'ミセルリフォーム').slice(0, 3).join(',')
-      : 'interior,room';
-    const dynamicUnsplashUrl = `https://images.unsplash.com/featured/1200x675/?${encodeURIComponent(queryKeywords)},interior,room&sig=${slug}`;
+    // ここで英語に変換された unsplashKeywords を確実に使用し、リンク切れを防止します。
+    const dynamicUnsplashUrl = `https://images.unsplash.com/featured/1200x675/?${encodeURIComponent(unsplashKeywords.replace(/\s+/g, ''))}&sig=${slug}`;
     
     // 静的なフォールバック画像リスト（他で使用済みのURLは排除する）
     const fallbackImages = [
