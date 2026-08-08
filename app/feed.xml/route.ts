@@ -4,7 +4,7 @@ import { blogPosts } from '@/lib/blog';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const siteUrl = 'https://reroom-ai-rust.vercel.app';
+  const siteUrl = 'https://reroom-ai.vercel.app';
 
   const xmlItems = blogPosts
     .map((post) => {
