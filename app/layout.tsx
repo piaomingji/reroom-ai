@@ -10,7 +10,7 @@ const notoSerif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://reroom-ai.vercel.app"),
+  metadataBase: new URL("https://reroom-ai-rust.vercel.app"),
   title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
   description:
     "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒でリフォーム後の完成予想図を作成。間取りや窓の位置はそのままに、新しい空間デザインをご提案します。",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     title: "ミセルリフォーム - 現場で使える完成予想図作成ツール",
     description:
       "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒で完成予想図を作成します。",
-    url: "https://reroom-ai.vercel.app",
+    url: "https://reroom-ai-rust.vercel.app",
     siteName: "ミセルリフォーム",
     images: [
       {
