@@ -13,6 +13,7 @@ export async function GET() {
       const eyecatchUrl = post.eyecatch.startsWith('http') 
         ? post.eyecatch 
         : `${siteUrl}${post.eyecatch}`;
+      const imageType = post.eyecatch.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
       return `
     <item>
@@ -21,7 +22,7 @@ export async function GET() {
       <guid isPermaLink="true">${postUrl}</guid>
       <pubDate>${pubDate}</pubDate>
       <description><![CDATA[${post.excerpt}]]></description>
-      <enclosure url="${eyecatchUrl}" length="0" type="image/jpeg" />
+      <enclosure url="${eyecatchUrl}" length="0" type="${imageType}" />
     </item>`;
     })
     .join('');
