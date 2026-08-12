@@ -22,13 +22,15 @@ export async function GET() {
       <guid isPermaLink="true">${postUrl}</guid>
       <pubDate>${pubDate}</pubDate>
       <description><![CDATA[${post.excerpt}]]></description>
-      <enclosure url="${eyecatchUrl}" length="0" type="${imageType}" />
+      <enclosure url="${eyecatchUrl}" length="250000" type="${imageType}" />
+      <media:content url="${eyecatchUrl}" medium="image" type="${imageType}" />
+      <media:thumbnail url="${eyecatchUrl}" />
     </item>`;
     })
     .join('');
 
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>ミセルリフォーム - お部屋リフォームお役立ちブログ</title>
     <link>${siteUrl}/blog</link>
