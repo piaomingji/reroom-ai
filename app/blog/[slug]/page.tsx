@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps) {
     };
   }
 
-  const siteUrl = 'https://reroom-ai-rust.vercel.app';
+  const siteUrl = 'https://reroom.smart-ai-portal.com';
   const imageUrl = post.eyecatch.startsWith('http') 
     ? post.eyecatch 
     : `${siteUrl}${post.eyecatch}`;

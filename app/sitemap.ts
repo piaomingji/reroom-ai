@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { blogPosts } from '@/lib/blog';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://reroom-ai-rust.vercel.app';
+  const baseUrl = 'https://reroom.smart-ai-portal.com';
 
   const routes = ['', '/blog', '/tokushoho'].map((route) => ({
     url: `${baseUrl}${route}`,
