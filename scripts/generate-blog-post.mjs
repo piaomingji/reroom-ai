@@ -165,7 +165,7 @@ async function generateImage(title, excerpt, defaultEyecatch, keywords, existing
   // 1. Pollinations AI での画像生成を試行
   try {
     console.log('Attempting Pollinations AI image generation...');
-    const prompt = encodeURIComponent(`professional interior design photograph of modern Japanese residential room wallpaper, ${slug.replace(/-/g, ' ')}, 8k resolution, bright daylight`);
+    const prompt = encodeURIComponent(`luxurious modern high-end architectural interior photography of stylish residential room, ${slug.replace(/-/g, ' ')}, 8k resolution, bright daylight`);
     const pollinationsUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=675&nologo=true`;
     const res = await fetch(pollinationsUrl, { signal: AbortSignal.timeout(8000) });
     if (res.ok) {
