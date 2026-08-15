@@ -541,7 +541,7 @@ export default function Studio() {
                           key={sample.id}
                           type="button"
                           onClick={() => selectSampleRoom(sample.image, sample.id, sample.roomTypeId)}
-                          className={}
+                          className="group relative aspect-[4/3] overflow-hidden rounded-xl border text-left transition-all duration-200 cursor-pointer border-line hover:border-ink-faint"
                         >
                           <Image src={sample.image} alt={sample.label} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                           <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-transparent flex flex-col justify-end p-2">
