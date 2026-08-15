@@ -82,3 +82,5 @@ export default function BlogListPage() {
     </div>
   );
 }
+
+// Rebuild trigger: 2026-08-15 15:30 JST
