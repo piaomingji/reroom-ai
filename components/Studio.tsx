@@ -60,6 +60,12 @@ export default function Studio() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    if (Number(freeCountRaw) < 50) {
+      setFreeCountRaw('50');
+    }
+  }, [freeCountRaw, setFreeCountRaw]);
+
+  useEffect(() => {
     // セッションIDの読み込みまたは生成
     if (typeof window !== 'undefined') {
       let currentSessId = localStorage.getItem('reroom_session_id');

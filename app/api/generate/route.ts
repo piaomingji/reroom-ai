@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
       const currentIpCount = await safeKvGet(ipKey);
       const currentGoogleCount = googleKey ? (await safeKvGet(googleKey)) : 0;
 
-      if (currentIpCount >= 5 || currentGoogleCount >= 5) {
+      if (currentIpCount >= 50 || currentGoogleCount >= 50) {
         return NextResponse.json(
           { error: '無料体験枠（通算5回）をすべて消費しました。引き続きご利用いただくには有料プランをご検討ください。' },
           { status: 429 }
@@ -304,59 +304,54 @@ export async function POST(req: NextRequest) {
 
     if (hasRefImagesBool) {
       if (!style) {
-        // 1. 「参考商品画像」のみがアップロードされている場合：
-        // - 「スタイル」のプロンプト条件は完全に適用しない。
-        // - 元の部屋の写真の構造・雰囲気をベースに、添付された参考商品の柄・色・テクスチャ（素材感）のみを忠実に適用・反映する。
-        instruction = `You are a professional architectural visualization tool.
-You are provided with multiple input images:
-- Image 1 is the original room interior photo before remodeling. This is the structural baseline.
-${refDescriptions.join('\n')}
+        instruction = `DRAMATIC MATERIAL & PRODUCT MAKEOVER:
+You are a top-tier interior designer and architectural visualization expert.
+Your task is to execute a BOLD, STRIKING BEFORE-AND-AFTER RENOVATION of the room in Image 1 using the provided reference product/material samples:
 
-CRITICAL GEOMETRY CONSTRAINT (HIGHEST PRIORITY):
-- You must STRICTLY and ABSOLUTELY lock the original room structure, layout, geometry, wireframe outlines (edges), and perspective of the original photo (Image 1). 
-- Every single boundary line of the room, ceiling shape, beam positions, column alignment, window locations, window frames, door coordinates, and camera perspective must align 100% perfectly with Image 1 down to the single-pixel level. Absolutely no distortion, warping, shifting, or structural changes are allowed.
-- The skeletal frame (骨組み) of the room must not move by a single millimeter.
+${refDescriptions.join("\n")}
 
-MATERIAL & TEXTURE MAPPING:
-- For flooring and walls: treat the reference images (Image 2, etc.) as decorative texture maps. Carefully analyze their colors, patterns, and material textures, and apply/map them onto the floor and wall regions of Image 1 strictly within the locked structural boundaries.
-- For equipment/furniture replacement (e.g., kitchen cabinets, bath units, toilets, vanity): replace the old equipment with the modern design (seamless flat doors, integrated design, etc.) of the reference image. However, the new equipment must fit exactly within the same physical volume, outline, and spatial bounds occupied by the old equipment in Image 1. Do not extend, shift, or distort the equipment boundaries outside their original layout footprint.
+MAKEOVER QUALITY REQUIREMENTS:
+- Make the material, wallpaper, flooring, and equipment replacements HIGHLY VISIBLE, BOLD, AND DRAMATIC.
+- The new surfaces must look immaculate, modern, and high-end with crisp textures and realistic studio lighting.
+- Overhaul old lighting with warm ambient illumination and clear architectural highlights.
 
-Keep the lighting, shadows, and perspective natural while swapping in the target materials. Do not change the overall room layout.
-High-quality professional interior design photography, realistic textures, realistic lighting, highly detailed.`;
+CAMERA & GEOMETRY LOCK:
+- Keep the room perspective, camera position, walls, ceiling height, and window/door locations locked to Image 1. Do not distort the room outline.
+
+Photorealistic 8K resolution, Architectural Digest standard, vivid textures, warm ambient lighting.`;
       } else {
-        // 2. 「参考商品画像」と「スタイル」の両方がアップロード・選択されている場合：
-        // - 選択されたスタイルのトーン＆マナーを適用する。
-        // - 添付された参考商品の柄・色・テクスチャ（素材感）がそのスタイル内に自然に組み込まれるようにプロンプトを合成する。
-        instruction = `You are a professional architectural visualization tool.
-You are provided with multiple input images:
-- Image 1 is the original room interior photo before remodeling. This is the structural baseline.
-${refDescriptions.join('\n')}
+        instruction = `DRAMATIC HYBRID STYLE & MATERIAL RENOVATION:
+You are an award-winning interior design visualization expert.
+Execute a DARING, HIGH-IMPACT BEFORE-AND-AFTER MAKEOVER of the room in Image 1, transforming it into the ${style.prompt} style while integrating the reference material/product samples:
 
-CRITICAL GEOMETRY CONSTRAINT (HIGHEST PRIORITY):
-- You must STRICTLY and ABSOLUTELY lock the original room structure, layout, geometry, wireframe outlines (edges), and perspective of the original photo (Image 1). 
-- Every single boundary line of the room, ceiling shape, beam positions, column alignment, window locations, window frames, door coordinates, and camera perspective must align 100% perfectly with Image 1 down to the single-pixel level. Absolutely no distortion, warping, shifting, or structural changes are allowed.
-- The skeletal frame (骨組み) of the room must not move by a single millimeter.
+${refDescriptions.join("\n")}
 
-REDESIGN TASK:
-- Redesign the original room (Image 1) into the ${style.prompt} style, applying its color palettes, furniture themes, and overall decor mood.
-- Simultaneously, perform realistic surface texture mapping and equipment replacement based on the reference images:
-  - Apply the flooring reference traits onto the floor area.
-  - Apply the wallpaper reference traits onto the wall areas.
-  - Replace any matching equipment/fixtures in the room with the physical product shape, design layout, and modern flat/seamless structure of the reference image, ensuring the new design elements blend naturally with the ${style.prompt} style and fit exactly within the original spatial bounds, volume, and footprint occupied by the old equipment in Image 1.
+MAKEOVER EXCELLENCE GUIDELINES:
+1. STYLE TRANSFORMATION: Overhaul the visual atmosphere to strongly feature the signature colors, materials, furniture, and lighting of the ${style.prompt} style.
+2. MATERIAL INTEGRATION: Apply reference flooring to floors, reference wallpaper to walls, and swap matching fixtures with the modern reference product design.
+3. VISUAL IMPACT: Ensure the before-and-after change is DRAMATIC, VIBRANT, AND IMPRESSIVE. Upgrade dull ceiling lights to luxurious architectural warm lighting and designer fixtures.
 
-Keep the lighting, shadows, and perspective natural.
-High-quality professional interior design photography, realistic textures, realistic lighting, highly detailed.`;
+CAMERA & GEOMETRY LOCK:
+- Preserve the exact room perspective, camera angle, wall boundaries, and window/door positions of Image 1.
+
+Photorealistic 8K resolution, Architectural Digest standard, rich textures, stunning architectural lighting.`;
       }
     } else {
-      // 3. スタイルのみ指定されている場合（従来通り）
-      instruction = `Redesign this ${roomType.prompt} interior in ${style!.prompt}.
-CRITICAL GEOMETRY CONSTRAINT (HIGHEST PRIORITY):
-- You must STRICTLY and ABSOLUTELY lock the original room structure, layout, geometry, wireframe outlines (edges), and perspective of the original photo (Image 1). 
-- Every single boundary line of the room, ceiling shape, beam positions, column alignment, window locations, window frames, door coordinates, and camera perspective must align 100% perfectly with Image 1 down to the single-pixel level. Absolutely no distortion, warping, shifting, or structural changes are allowed.
-- The skeletal frame (骨組み) of the room must not move by a single millimeter.
+      instruction = `DRAMATIC INTERIOR MAKEOVER & STRIKING BEFORE-AND-AFTER REVISION:
+You are an award-winning interior designer and architectural visualization expert.
+Execute a DARING, HIGH-IMPACT, OBVIOUS BEFORE-AND-AFTER RENOVATION of this ${roomType.prompt} photo into the ${style!.prompt} style.
 
-Change ONLY the interior finishes: replace the wallpaper, paint, flooring material, furniture, lighting fixtures, and decorative items to match the target style. 
-Do not change the structure of the room. High-quality professional interior design photography, realistic textures, realistic lighting, highly detailed.`;
+VISUAL TRANSFORM REQUIREMENTS (HIGH CONTRAST & CLEAR VISUAL IMPACT):
+1. WALLS & SURFACES: Completely replace old wallpaper/paint with fresh, premium, high-contrast ${style!.prompt} wall treatments, accent textures, or modern panels.
+2. FLOORING: Overhaul the flooring with brand new, rich, highly visible ${style!.prompt} materials (e.g. pristine light oak hardwood, modern dark walnut, fresh tatami, or polished stone tiles).
+3. LIGHTING & ATMOSPHERE: Dramatically upgrade room lighting! Replace dated lighting with warm architectural spotlights, indirect LED strip glow, and stylish designer lamps.
+4. FURNITURE & DECOR: Replace dated furniture with elegant, modern, high-contrast ${style!.prompt} furniture, plush rugs, indoor greenery, and refined decor.
+
+CAMERA & GEOMETRY LOCK:
+- Preserve the exact room perspective, camera position, wall boundaries, ceiling height, and window/door coordinates of the original photo.
+- Do NOT distort room geometry, but DO make every single surface, color, texture, lighting, and decor element look 100% newly remodeled and visually breathtaking.
+
+Photorealistic 8K resolution, Architectural Digest magazine standard, vivid photorealism, warm luxury ambient lighting.`;
     }
 
     parts.push({ text: instruction });

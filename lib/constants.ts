@@ -69,8 +69,8 @@ export const STYLES: StyleOption[] = [
   },
 ];
 
-export const FREE_GENERATIONS = 5;
-export const DAILY_IP_LIMIT = 5;
+export const FREE_GENERATIONS = 50;
+export const DAILY_IP_LIMIT = 50;
 
 
 export type SampleRoom = {
