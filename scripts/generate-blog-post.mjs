@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 import { GoogleGenAI } from '@google/genai';
 
@@ -316,9 +317,16 @@ async function main() {
     const imageFilename = `${article.slug}.jpg`;
     const imagePath = path.join(process.cwd(), 'public/blog', imageFilename);
     
-    fs.writeFileSync(imagePath, imageBuffer);
-    console.log(`Saved eyecatch image locally to: public/blog/${imageFilename}`);
-    article.eyecatch = `/blog/${imageFilename}`;
+    fs.writeFileSync(imagePath, resultImage.data);
+      console.log();
+      try {
+        const pyCmd = ;
+        execSync(pyCmd, { stdio: 'ignore' });
+        console.log();
+      } catch (err) {
+        console.warn();
+      }
+      article.eyecatch = `/blog/${imageFilename}`;
     
     // 本日の日付
     const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
