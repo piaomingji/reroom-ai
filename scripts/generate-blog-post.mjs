@@ -162,10 +162,57 @@ async function generateArticle(selectedTopic) {
 async function generateImage(title, excerpt, defaultEyecatch, keywords, existingEyecatches, slug) {
   console.log(`Generating matching eyecatch image for slug: ${slug}`);
 
-  // 1. Pollinations AI での画像生成を試行
+  const promptForImagePrompt = `
+You are an expert prompt engineer for AI image generators (Imagen 3).
+Create a highly detailed, descriptive English prompt for generating an eye-catching, high-converting, professional blog cover image that perfectly matches the following article:
+
+Article Title: ${title}
+Article Excerpt: ${excerpt}
+
+MANDATORY REQUIREMENTS FOR HIGH-CTR CLICK-WORTHY IMAGES:
+1. MUST be photorealistic, ultra-high quality, 8k resolution luxury architectural interior photography of a modern residential room in Japan.
+2. Must feature warm, inviting ambient cove lighting, elegant furniture, cozy atmosphere, and high-end Architectural Digest magazine aesthetic.
+3. NO uncanny artifacts, NO text, NO empty, cold, or ugly bare room scenes.
+4. Specify realistic lighting (e.g., "warm golden hour daylight", "soft cozy indoor LED lighting") and high-end camera details (e.g., "sharp focus, Architectural Digest style, detailed wallpaper texture, 8k resolution").
+5. Do NOT include any text, overlays, UI elements, signs, or borders in the image.
+6. Output ONLY the English prompt text, without any introductory or concluding remarks.
+`;
+
   try {
-    console.log('Attempting Pollinations AI image generation...');
-    const prompt = encodeURIComponent(`luxurious modern high-end architectural interior photography of stylish residential room, ${slug.replace(/-/g, ' ')}, 8k resolution, bright daylight`);
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false });
+    const promptResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: promptForImagePrompt
+    });
+
+    const imagePrompt = promptResponse.text.trim();
+    console.log(`Generated Image Prompt: ${imagePrompt}`);
+
+    console.log("Attempting to generate image via gemini-3.1-flash-image...");
+    const imageResponse = await ai.interactions.create({
+      model: "gemini-3.1-flash-image",
+      input: [
+        { type: "text", text: `${imagePrompt}, luxury modern interior photography, high quality, 8k, blog banner` }
+      ],
+      response_format: {
+        type: "image",
+        aspect_ratio: "16:9",
+        image_size: "1200x675"
+      }
+    });
+
+    if (imageResponse && imageResponse.image && imageResponse.image.base64) {
+      console.log("Successfully generated image via gemini-3.1-flash-image!");
+      return Buffer.from(imageResponse.image.base64, "base64");
+    }
+  } catch (e) {
+    console.log("Gemini image generation skipped/failed:", e.message);
+  }
+
+  // Fallback 1: Pollinations AI
+  try {
+    console.log("Attempting Pollinations AI image generation...");
+    const prompt = encodeURIComponent(`luxurious modern high-end architectural interior photography of stylish residential room in Japan, ${slug.replace(/-/g, " ")}, warm cozy lighting, architectural digest style, 8k resolution`);
     const pollinationsUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=675&nologo=true`;
     const res = await fetch(pollinationsUrl, { signal: AbortSignal.timeout(8000) });
     if (res.ok) {
@@ -176,16 +223,15 @@ async function generateImage(title, excerpt, defaultEyecatch, keywords, existing
       }
     }
   } catch (e) {
-    console.log('Pollinations AI image generation skipped/failed:', e.message);
+    console.log("Pollinations AI image generation skipped/failed:", e.message);
   }
 
-  // 2. Unsplash から高画質インテリア画像をダウンロードしてローカル保存
+  // Fallback 2: High quality Unsplash interior photos
   const photoIds = [
-    'photo-1616486338812-3dadae4b4ace', 'photo-1618221195710-dd6b41faaea6', 'photo-1586023492125-27b2c045efd7', 'photo-1616046229478-9901c5536a45',
-    'photo-1598928506311-c55ded91a20c', 'photo-1600210492486-724fe5c67fb0', 'photo-1600607687939-ce8a6c25118c', 'photo-1600607687920-4e2a09cf159d',
-    'photo-1617806118233-18e1db207faf', 'photo-1502672260266-1c1ef2d93688', 'photo-1554995207-c18c203602cb', 'photo-1583847268964-b28dc8f51f92',
-    'photo-1513694203232-719a280e022f', 'photo-1484154218962-a197022b5858', 'photo-1505691938895-1758d7feb511', 'photo-1522771739844-6a9f6d5f14af',
-    'photo-1560448204-e02f11c3d0e2', 'photo-1560185007-cde436f6a4d0', 'photo-1556911220-e15b29be8c8f', 'photo-1513519245088-0e12902e5a38'
+    "photo-1616486338812-3dadae4b4ace", "photo-1618221195710-dd6b41faaea6", "photo-1586023492125-27b2c045efd7", "photo-1616046229478-9901c5536a45",
+    "photo-1598928506311-c55ded91a20c", "photo-1600210492486-724fe5c67fb0", "photo-1600607687939-ce8a6c25118c", "photo-1600607687920-4e2a09cf159d",
+    "photo-1617806118233-18e1db207faf", "photo-1502672260266-1c1ef2d93688", "photo-1554995207-c18c203602cb", "photo-1583847268964-b28dc8f51f92",
+    "photo-1513694203232-719a280e022f", "photo-1484154218962-a197022b5858", "photo-1505691938895-1758d7feb511", "photo-1522771739844-6a9f6d5f14af"
   ];
   let hash = 0;
   for (let i = 0; i < slug.length; i++) {
@@ -198,7 +244,7 @@ async function generateImage(title, excerpt, defaultEyecatch, keywords, existing
     console.log(`Downloading fallback interior photo from Unsplash: ${photoId}`);
     const res = await fetch(unsplashUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       },
       signal: AbortSignal.timeout(5000)
     });
@@ -210,19 +256,18 @@ async function generateImage(title, excerpt, defaultEyecatch, keywords, existing
       }
     }
   } catch (e) {
-    console.log('Unsplash image download skipped/failed:', e.message);
+    console.log("Unsplash image download skipped/failed:", e.message);
   }
 
-  // 3. ネットワーク取得が失敗した場合は、既存のローカル画像をコピーして使用
-  console.log('Using local fallback image file...');
-  const publicBlogDir = path.join(process.cwd(), 'public/blog');
-  const localFiles = fs.readdirSync(publicBlogDir).filter(f => f.endsWith('.png') || f.endsWith('.jpg'));
+  // Fallback 3: Local file
+  const publicBlogDir = path.join(process.cwd(), "public/blog");
+  const localFiles = fs.readdirSync(publicBlogDir).filter(f => f.endsWith(".png") || f.endsWith(".jpg"));
   if (localFiles.length > 0) {
     const selectedFile = localFiles[Math.abs(hash) % localFiles.length];
     return fs.readFileSync(path.join(publicBlogDir, selectedFile));
   }
 
-  throw new Error('No eyecatch image source available');
+  throw new Error("No eyecatch image source available");
 }
 
 async function main() {
