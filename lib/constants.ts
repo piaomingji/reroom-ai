@@ -71,3 +71,36 @@ export const STYLES: StyleOption[] = [
 
 export const FREE_GENERATIONS = 5;
 export const DAILY_IP_LIMIT = 5;
+
+
+export type SampleRoom = {
+  id: string;
+  label: string;
+  roomTypeId: string;
+  image: string;
+  desc: string;
+};
+
+export const SAMPLE_ROOMS: SampleRoom[] = [
+  {
+    id: sample_living,
+    label: リビング（ナチュラル）,
+    roomTypeId: living_room,
+    image: /sample/sample_living.jpg,
+    desc: 明るい光が入るモダンリビング
+  },
+  {
+    id: sample_japanese,
+    label: 和室・和モダン,
+    roomTypeId: living_room,
+    image: /sample/sample_japanese.jpg,
+    desc: 畳と障子がある落ち着いた空間
+  },
+  {
+    id: sample_bedroom,
+    label: 寝室・ベッドルーム,
+    roomTypeId: bedroom,
+    image: /sample/sample_bedroom.jpg,
+    desc: ホテルライクな心地よい寝室
+  }
+];

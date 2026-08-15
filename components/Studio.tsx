@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { FREE_GENERATIONS, ROOM_TYPES, STYLES } from '@/lib/constants';
+import { FREE_GENERATIONS, ROOM_TYPES, STYLES, SAMPLE_ROOMS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/useLocalStorage';
 import CompareSlider from './CompareSlider';
 import Reveal from './Reveal';
@@ -19,6 +19,7 @@ export default function Studio() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState(ROOM_TYPES[0].id);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0].id);
+  const [selectedSample, setSelectedSample] = useState<string | null>(null);
 
   // カテゴリ別参考画像の状態
   const [refFlooring, setRefFlooring] = useState<string | null>(null);
@@ -317,8 +318,23 @@ export default function Studio() {
     }, 100);
   };
 
+    const selectSampleRoom = (imageUrl: string, sampleId: string, roomTypeId: string) => {
+    setSelectedSample(sampleId);
+    setSelectedRoom(roomTypeId);
+    fetch(imageUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setUploadedImage(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      });
+  };
+
   const resetAll = () => {
     setUploadedImage(null);
+    setSelectedSample(null);
     setResultImage(null);
     setGenerationTime(null);
     setErrorMsg(null);
@@ -508,6 +524,33 @@ export default function Studio() {
                     </div>
                   )}
                 </div>
+
+                                  {/* 離脱防止：サンプル部屋でお試し */}
+                  <div className="mt-4 rounded-2xl border border-line bg-paper-raised p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-ink flex items-center gap-1.5">
+                        <span>📷 写真をお持ちでない方はサンプル部屋でお試し</span>
+                      </p>
+                      <span className="text-[10px] font-semibold text-clay bg-clay-soft px-2.5 py-0.5 rounded-full">
+                        ワンタップでお試し
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {SAMPLE_ROOMS.map((sample) => (
+                        <button
+                          key={sample.id}
+                          type="button"
+                          onClick={() => selectSampleRoom(sample.image, sample.id, sample.roomTypeId)}
+                          className={}
+                        >
+                          <Image src={sample.image} alt={sample.label} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-transparent flex flex-col justify-end p-2">
+                            <span className="text-[10px] font-bold text-paper drop-shadow leading-tight">{sample.label}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                 {/* 02+03+04. オプション */}
                 <div className="flex flex-col gap-8">
