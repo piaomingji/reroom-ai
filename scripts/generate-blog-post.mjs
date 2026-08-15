@@ -313,20 +313,17 @@ async function main() {
     }
     
     // 画像の生成とローカル保存（必ず public/blog に保存し、相対パスを指定）
+    const blogDir = path.join(process.cwd(), 'public/blog');
+    if (!fs.existsSync(blogDir)) {
+      fs.mkdirSync(blogDir, { recursive: true });
+    }
     const imageBuffer = await generateImage(article.title, article.excerpt, selectedTopic.defaultEyecatch, article.keywords, existingEyecatches, article.slug);
     const imageFilename = `${article.slug}.jpg`;
-    const imagePath = path.join(process.cwd(), 'public/blog', imageFilename);
+    const imagePath = path.join(blogDir, imageFilename);
     
-    fs.writeFileSync(imagePath, resultImage.data);
-      console.log();
-      try {
-        const pyCmd = ;
-        execSync(pyCmd, { stdio: 'ignore' });
-        console.log();
-      } catch (err) {
-        console.warn();
-      }
-      article.eyecatch = `/blog/${imageFilename}`;
+    fs.writeFileSync(imagePath, imageBuffer);
+    console.log(`Saved eyecatch image to ${imagePath}`);
+    article.eyecatch = `/blog/${imageFilename}`;
     
     // 本日の日付
     const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
