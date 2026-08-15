@@ -276,7 +276,7 @@ async function main() {
     article.eyecatch = `/blog/${imageFilename}`;
     
     // 本日の日付
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
     article.date = today;
 
     console.log(`Generated article title: ${article.title}`);
