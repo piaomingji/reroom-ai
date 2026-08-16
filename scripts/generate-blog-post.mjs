@@ -190,22 +190,21 @@ MANDATORY REQUIREMENTS FOR HIGH-CTR CLICK-WORTHY IMAGES:
     const imagePrompt = promptResponse.text.trim();
     console.log(`Generated Image Prompt: ${imagePrompt}`);
 
-    console.log("Attempting to generate image via gemini-3.1-flash-image...");
-    const imageResponse = await ai.interactions.create({
-      model: "gemini-3.1-flash-image",
-      input: [
-        { type: "text", text: `${imagePrompt}, luxury modern interior photography, high quality, 8k, blog banner` }
-      ],
-      response_format: {
-        type: "image",
-        aspect_ratio: "16:9",
-        image_size: "1200x675"
+    console.log("Attempting to generate image via Imagen 3 (imagen-3.0-generate-002)...");
+    const imageResponse = await ai.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt: `${imagePrompt}, luxury modern interior photography, high quality, 8k, architectural digest style, warm natural lighting`,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: "16:9",
+        outputMimeType: "image/jpeg"
       }
     });
 
-    if (imageResponse && imageResponse.image && imageResponse.image.base64) {
-      console.log("Successfully generated image via gemini-3.1-flash-image!");
-      return Buffer.from(imageResponse.image.base64, "base64");
+    if (imageResponse && imageResponse.generatedImages && imageResponse.generatedImages.length > 0) {
+      const base64Image = imageResponse.generatedImages[0].image.imageBytes;
+      console.log("Successfully generated image via Imagen 3!");
+      return Buffer.from(base64Image, "base64");
     }
   } catch (e) {
     console.log("Gemini image generation skipped/failed:", e.message);
