@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reroom-ai-cache-v3';
+const CACHE_NAME = 'reroom-ai-cache-v4';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -7,7 +7,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // 新しいService Workerを即座にアクティブにする
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);
@@ -20,26 +20,46 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName); // 古いキャッシュを完全に消去
-          }
+          // キャッシュの完全破棄（ブラウザ滞留の解消）
+          return caches.delete(cacheName);
         })
       );
-    }).then(() => self.clients.claim()) // すべてのクライアントを即座に制御下に置く
+    }).then(() => self.clients.claim())
   );
 });
 
-// ネットワーク優先: 常に最新を取得し、オフライン時のみキャッシュにフォールバック
+// ネットワーク優先 (Network-First) 戦略
 self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate' || event.request.url.includes('/blog')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+    caches.match(event.request).then((response) => {
+      if (response) {
         return response;
-      })
-      .catch(() => caches.match(event.request))
+      }
+      return fetch(event.request).then((netResponse) => {
+        if (!netResponse || netResponse.status !== 200 || netResponse.type !== 'basic') {
+          return netResponse;
+        }
+        const responseToCache = netResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        return netResponse;
+      });
+    })
   );
 });
