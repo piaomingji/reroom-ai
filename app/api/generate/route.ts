@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { ROOM_TYPES, STYLES } from '@/lib/constants';
 import { createClient } from '@vercel/kv';
+import { getCurrentUser, deductUserCredit } from '@/lib/auth';
 
 const kv = createClient({
   url: process.env.KV_REST_API_URL || process.env.REDIS_REST_API_URL || "",
@@ -114,6 +115,39 @@ export async function POST(req: NextRequest) {
         { error: 'スタイル、または参考画像を1つ以上指定してください。' },
         { status: 400 }
       );
+    }
+
+    const currentUser = await getCurrentUser();
+    let remainingCredits: number | undefined = undefined;
+
+    if (currentUser) {
+      const { success, remainingCredits: updatedCredits } = await deductUserCredit(currentUser.id);
+      if (!success) {
+        return NextResponse.json(
+          {
+            error: "残りの生成クレジットがありません。有料プランへのご加入、または追加クレジットのご購入をお願いいたします。",
+            requiresUpgrade: true,
+            remainingCredits: 0,
+          },
+          { status: 403 }
+        );
+      }
+      remainingCredits = updatedCredits;
+    } else {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get("x-real-ip") || '127.0.0.1';
+      const key = `reroom-ai:ip:${ip}`;
+      const count = await safeKvGet(key);
+      if (count >= 3) {
+        return NextResponse.json(
+          {
+            error: "無料お試しの制限回数（3回）を超過しました。無料会員登録をすると+3回分のクレジットを獲得できます！",
+            requiresAuth: true,
+            requiresUpgrade: true,
+          },
+          { status: 403 }
+        );
+      }
+      await safeKvSet(key, count + 1);
     }
 
     const ip =
