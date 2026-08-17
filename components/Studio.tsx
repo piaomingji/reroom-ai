@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
 import { FREE_GENERATIONS, ROOM_TYPES, STYLES, SAMPLE_ROOMS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/useLocalStorage';
@@ -15,6 +16,7 @@ const LOADING_STATUSES = [
 ];
 
 export default function Studio() {
+  const { user, openAuthModal, updateUserCredits } = useAuth();
   // 입력 상태
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState(ROOM_TYPES[0].id);
@@ -191,10 +193,18 @@ export default function Studio() {
       return;
     }
 
-    // Limit check for non-BYOK and non-pro/business users
-    if (!byokMode && userPlan !== 'pro' && userPlan !== 'business' && freeCount <= 0) {
-      setShowUpgradeModal(true);
-      return;
+    // Limit check
+    if (user) {
+      if (user.plan === 'free' && user.credits <= 0) {
+        setErrorMsg('所持している生成クレジット（残り0回）がなくなりました。クレジットの追加購入をご検討ください。');
+        setShowUpgradeModal(true);
+        return;
+      }
+    } else {
+      if (!byokMode && userPlan !== 'pro' && userPlan !== 'business' && freeCount <= 0) {
+        openAuthModal();
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -253,11 +263,11 @@ export default function Studio() {
         document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
 
-      if (!byokMode && userPlan !== 'pro') {
+      if (typeof data.remainingCredits === 'number') {
+        updateUserCredits(data.remainingCredits);
+      } else if (!user && !byokMode && userPlan !== 'pro') {
         const nextCount = Math.max(0, freeCount - 1);
         setFreeCountRaw(String(nextCount));
-        
-        // Dispatch storage event to sync count globally
         window.dispatchEvent(new Event('storage'));
       }
     } catch (err) {
@@ -851,7 +861,9 @@ export default function Studio() {
                     {!byokMode && (
                       <div className="flex justify-between items-center text-xs font-semibold text-ink-soft bg-paper-raised px-4 py-3 rounded-xl border border-line select-none">
                         <span>会員ステータス:</span>
-                        {userPlan === 'pro' ? (
+                        {user ? (
+                          <span className="text-ink font-bold text-ink-strong">会員特典クレジット（残り {user.credits}回）</span>
+                        ) : userPlan === 'pro' ? (
                           <span className="text-clay font-bold animate-pulse">PROプラン（使い放題）</span>
                         ) : userPlan === 'business' ? (
                           <span className="text-clay-deep font-bold animate-pulse">法人プラン（使い放題）</span>
