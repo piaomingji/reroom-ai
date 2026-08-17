@@ -174,7 +174,7 @@ MANDATORY REQUIREMENTS FOR HIGH-CTR CLICK-WORTHY IMAGES:
 1. CRITICAL ROOM TYPE MATCHING: Pay strict attention to the specific room/area in the Article Title and Excerpt. If title mentions '玄関' (entrance/foyer), describe a luxury Japanese genkan entrance foyer. If '和室' (tatami room), describe a Japanese modern tatami room. If '洗面所' or 'トイレ' (washroom/powder room), describe a stylish lavatory. If '子ども部屋' (kids room), describe a kids room. If 'リビング', describe a living room. DO NOT generate a living room if the article is about an entrance, toilet, or tatami room!
 2. MUST be photorealistic, ultra-high quality, 8k resolution luxury architectural interior photography of the target room in Japan.
 2. Must feature warm, inviting ambient cove lighting, elegant furniture, cozy atmosphere, and high-end Architectural Digest magazine aesthetic.
-3. NO uncanny artifacts, NO text, NO empty, cold, or ugly bare room scenes.
+3. NO uncanny artifacts, NO text, NO empty, cold, plain, or monotonous bare rooms. ALWAYS include vibrant color harmony, warm inviting ambient lighting, stylish house plants, rich wallpaper textures, and high-end luxury feel.
 4. Specify realistic lighting (e.g., "warm golden hour daylight", "soft cozy indoor LED lighting") and high-end camera details (e.g., "sharp focus, Architectural Digest style, detailed wallpaper texture, 8k resolution").
 5. Do NOT include any text, overlays, UI elements, signs, or borders in the image.
 6. Output ONLY the English prompt text, without any introductory or concluding remarks.

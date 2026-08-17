@@ -85,4 +85,6 @@ export default function BlogListPage() {
 
 
 
-// Rebuild trigger: 2026-08-17 13:32 JST - sw cache purge
+
+
+// Rebuild trigger: 2026-08-17 13:57 JST - new vibrant image update
