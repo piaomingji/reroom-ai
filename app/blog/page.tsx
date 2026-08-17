@@ -87,4 +87,4 @@ export default function BlogListPage() {
 
 
 
-// Rebuild trigger: 2026-08-17 13:57 JST - new vibrant image update
+// Rebuild trigger: 2026-08-17T18:27:41.876Z
