@@ -122,6 +122,11 @@ export async function POST(req: NextRequest) {
     let remainingCredits: number | undefined = undefined;
     const ipQuotaCount = await getIpQuotaFromCookie();
 
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
+    const ipKey = `reroom_ai:ip:${ip}`;
+    const currentIpCount = await safeKvGet(ipKey);
+    const effectiveIpCount = Math.max(ipQuotaCount, currentIpCount);
+
     if (currentUser) {
       if (currentUser.plan === "free" && currentUser.credits <= 0) {
         return NextResponse.json(
@@ -134,7 +139,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (currentUser.plan === "free" && ipQuotaCount >= 10) {
+      if (currentUser.plan === "free" && effectiveIpCount >= 10) {
         return NextResponse.json(
           {
             error: "このIPアドレス（端末）からの無料利用枠（合計10回）を超過しました。有料プラン（Proプラン）へのお申し込みが必要です。",
@@ -156,15 +161,11 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
+      await safeKvSet(ipKey, currentIpCount + 1);
       await incrementIpQuotaCookie();
       remainingCredits = updatedCredits;
     } else {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
-      const key = `reroom_ai:ip:${ip}`;
-      const count = await safeKvGet(key);
-      const isKvAvailable = !!process.env.KV_REST_API_URL;
-      
-      if (ipQuotaCount >= 5 || (isKvAvailable && count >= 5) || (!isKvAvailable && typeof quotaRemaining === "number" && quotaRemaining <= 0)) {
+      if (effectiveIpCount >= 5) {
         return NextResponse.json(
           {
             error: "この端末（IP）からの無料お試しの制限回数（5回）を超過しました。無料会員登録をするとさらにクレジットを獲得できます！",
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      await safeKvSet(key, count + 1);
+      await safeKvSet(ipKey, currentIpCount + 1);
       await incrementIpQuotaCookie();
     }
 
