@@ -226,7 +226,7 @@ export default function Studio() {
         headers: { 
           'Content-Type': 'application/json'
         },
-        credentials: 'omit',
+        credentials: 'same-origin',
         body: JSON.stringify({
           image: uploadedImage,
           roomTypeId: selectedRoom,
