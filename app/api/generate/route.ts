@@ -390,28 +390,36 @@ Photorealistic 8K resolution, Architectural Digest magazine standard, vivid phot
 
     parts.push({ text: instruction });
 
-    const ai = new GoogleGenAI({ apiKey });
-    const res = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
-      contents: [
-        {
-          role: 'user',
-          parts,
-        },
-      ],
-    });
+    const ai = new GoogleGenAI({ apiKey, vertexai: false });
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inputs: any[] = [
+      { type: "text", text: instruction },
+      { type: "image", data: base64Image, mime_type: mimeType }
+    ];
 
-    const candidate = res.candidates?.[0];
-
-    if (candidate?.finishReason === 'SAFETY') {
-      return NextResponse.json(
-        { error: '安全ポリシーにより画像の生成がブロックされました。別の画像を使用してください。' },
-        { status: 400 }
-      );
+    if (refFlooring && refFlooring.startsWith("data:")) {
+      const match = refFlooring.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) inputs.push({ type: "image", data: match[2], mime_type: match[1] });
+    }
+    if (refWallpaper && refWallpaper.startsWith("data:")) {
+      const match = refWallpaper.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) inputs.push({ type: "image", data: match[2], mime_type: match[1] });
+    }
+    if (refKitchen && refKitchen.startsWith("data:")) {
+      const match = refKitchen.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) inputs.push({ type: "image", data: match[2], mime_type: match[1] });
     }
 
-    const part = candidate?.content?.parts?.find((p) => p.inlineData);
-    const imageBase64 = part?.inlineData?.data;
+    const interaction = await ai.interactions.create({
+      model: "gemini-3.1-flash-image",
+      input: inputs,
+      response_format: {
+        type: "image"
+      }
+    });
+
+    const imageBase64 = interaction?.output_image?.data;
 
     if (!imageBase64) {
       return NextResponse.json(
