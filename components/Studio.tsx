@@ -265,7 +265,8 @@ export default function Studio() {
 
       if (typeof data.remainingCredits === 'number') {
         updateUserCredits(data.remainingCredits);
-      } else if (!user && !byokMode && userPlan !== 'pro') {
+      }
+      if (!user && !byokMode && userPlan !== 'pro') {
         const nextCount = Math.max(0, freeCount - 1);
         setFreeCountRaw(String(nextCount));
         window.dispatchEvent(new Event('storage'));
