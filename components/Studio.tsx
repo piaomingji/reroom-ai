@@ -61,11 +61,9 @@ export default function Studio() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (Number(freeCountRaw) < 50) {
-      setFreeCountRaw('50');
-    }
-  }, [freeCountRaw, setFreeCountRaw]);
+  // A leftover override used to sit here that pushed this counter back up to 50 on every page load,
+  // which handed the browser an unlimited free trial: use it up, reload, start again. The real
+  // allowance is enforced on the server; this number is only what the screen shows.
 
   useEffect(() => {
     // セッションIDの読み込みまたは生成
