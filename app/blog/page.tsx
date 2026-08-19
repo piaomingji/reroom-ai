@@ -87,4 +87,4 @@ export default function BlogListPage() {
 
 
 
-// Rebuild trigger: 2026-08-18T18:26:32.973Z
+// Rebuild trigger: 2026-08-19T18:22:48.841Z
