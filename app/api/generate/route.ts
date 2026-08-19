@@ -139,23 +139,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const { success, remainingCredits: updatedCredits } = await deductUserCredit(currentUser.id);
-      if (!success) {
-        return NextResponse.json(
-          {
-            error: "残りの生成クレジットがありません。有料プランへのご加入、または追加クレジットのご購入をお願いいたします。",
-            requiresUpgrade: true,
-            remainingCredits: 0,
-          },
-          { status: 403 }
-        );
-      }
-      // Counted against the connection AND the account, so signing in with a second Google address
-      // on the same machine does not hand out another free allowance.
-      await bumpCounter(ipKey);
-      if (currentUser.email) await bumpCounter(GOOGLE_QUOTA_KEY(currentUser.email));
-      await incrementIpQuotaCookie();
-      remainingCredits = updatedCredits;
+      // The credit is taken after the image exists, not here. Charging up front meant a generation
+      // that timed out or was refused still cost the person a credit, with nothing to show for it --
+      // and when the platform kills the request there is no code left running to give it back.
+      remainingCredits = currentUser.credits;
     } else {
       if (effectiveIpCount >= FREE_GUEST_CREDITS) {
         return NextResponse.json(
@@ -167,8 +154,6 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      await bumpCounter(ipKey);
-      await incrementIpQuotaCookie();
     }
 
     // ip defined above
@@ -433,6 +418,20 @@ Photorealistic 8K resolution, Architectural Digest magazine standard, vivid phot
         { error: '画像の生成に失敗したか、ブロックされました。別の空間タイプやスタイルを選択してください。' },
         { status: 400 }
       );
+    }
+
+    // Now that there is an image to hand back, record the use: deduct the credit, count it against
+    // both the connection and the account, and advance the cookie. Nothing above this point costs
+    // the person anything.
+    if (currentUser) {
+      const { success, remainingCredits: updatedCredits } = await deductUserCredit(currentUser.id);
+      if (success) remainingCredits = updatedCredits;
+      await bumpCounter(IP_QUOTA_KEY(ip));
+      if (currentUser.email) await bumpCounter(GOOGLE_QUOTA_KEY(currentUser.email));
+      await incrementIpQuotaCookie();
+    } else {
+      await bumpCounter(IP_QUOTA_KEY(ip));
+      await incrementIpQuotaCookie();
     }
 
     if (isDemoMode && !isPremium) {
