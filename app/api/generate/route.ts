@@ -1,42 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { ROOM_TYPES, STYLES } from '@/lib/constants';
-import { createClient } from '@vercel/kv';
+import { quotaGet, quotaIncrement } from '@/lib/quotaStore';
+import { IP_QUOTA_KEY, GOOGLE_QUOTA_KEY, QUOTA_TTL_SECONDS, FREE_TOTAL_CREDITS, FREE_GUEST_CREDITS } from '@/lib/quota';
 import { getCurrentUser, deductUserCredit, getIpQuotaFromCookie, incrementIpQuotaCookie } from '@/lib/auth';
 
-const kv = createClient({
-  url: process.env.KV_REST_API_URL || process.env.REDIS_REST_API_URL || "",
-  token: process.env.KV_REST_API_TOKEN || process.env.REDIS_REST_API_TOKEN || "",
-});
-
+/**
+ * Counters go through the shared store, and are incremented rather than written.
+ *
+ * The previous pair of helpers returned 0 and did nothing whenever the REST credentials were absent
+ * -- which was always -- so every server-side limit in this file read as "nothing used yet". They
+ * also read a value and wrote value+1, which loses a count whenever two requests overlap.
+ */
 async function safeKvGet(key: string): Promise<number> {
-  try {
-    if (!process.env.KV_REST_API_URL && !process.env.REDIS_REST_API_URL) return 0;
-    const val = await kv.get<number>(key);
-    return typeof val === "number" ? val : 0;
-  } catch (e) {
-    console.warn("KV get failed:", e);
-    return 0;
-  }
+  return await quotaGet(key);
 }
 
-async function safeKvSet(key: string, value: number, opts?: any) {
-  try {
-    if (!process.env.KV_REST_API_URL && !process.env.REDIS_REST_API_URL) return;
-    await kv.set(key, value, opts);
-  } catch (e) {
-    console.warn("KV set failed:", e);
-  }
-}
-
-async function safeKvTtl(key: string): Promise<number> {
-  try {
-    if (!process.env.KV_REST_API_URL && !process.env.REDIS_REST_API_URL) return 0;
-    return await kv.ttl(key);
-  } catch (e) {
-    console.warn("KV ttl failed:", e);
-    return 0;
-  }
+async function bumpCounter(key: string): Promise<number> {
+  return await quotaIncrement(key, QUOTA_TTL_SECONDS);
 }
 
 export const runtime = 'nodejs';
@@ -123,11 +104,19 @@ export async function POST(req: NextRequest) {
     const ipQuotaCount = await getIpQuotaFromCookie();
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "127.0.0.1";
-    const ipKey = `reroom_ai:ip:${ip}`;
+    const ipKey = IP_QUOTA_KEY(ip);
     const currentIpCount = await safeKvGet(ipKey);
     const effectiveIpCount = Math.max(ipQuotaCount, currentIpCount);
 
     if (currentUser) {
+      // The account's own counter matters as much as the device's: signing in with a second Google
+      // account on the same device must not hand out a fresh allowance, and the same account used
+      // from a second device must not either. Whichever count is higher is the one that applies.
+      const accountCount = currentUser.email
+        ? await safeKvGet(GOOGLE_QUOTA_KEY(currentUser.email))
+        : 0;
+      const effectiveCount = Math.max(effectiveIpCount, accountCount);
+
       if (currentUser.plan === "free" && currentUser.credits <= 0) {
         return NextResponse.json(
           {
@@ -139,7 +128,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (currentUser.plan === "free" && effectiveIpCount >= 10) {
+      if (currentUser.plan === "free" && effectiveCount >= FREE_TOTAL_CREDITS) {
         return NextResponse.json(
           {
             error: "このIPアドレス（端末）からの無料利用枠（合計10回）を超過しました。有料プラン（Proプラン）へのお申し込みが必要です。",
@@ -161,11 +150,14 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      await safeKvSet(ipKey, currentIpCount + 1);
+      // Counted against the connection AND the account, so signing in with a second Google address
+      // on the same machine does not hand out another free allowance.
+      await bumpCounter(ipKey);
+      if (currentUser.email) await bumpCounter(GOOGLE_QUOTA_KEY(currentUser.email));
       await incrementIpQuotaCookie();
       remainingCredits = updatedCredits;
     } else {
-      if (effectiveIpCount >= 5) {
+      if (effectiveIpCount >= FREE_GUEST_CREDITS) {
         return NextResponse.json(
           {
             error: "この端末（IP）からの無料お試しの制限回数（5回）を超過しました。無料会員登録をするとさらにクレジットを獲得できます！",
@@ -175,7 +167,7 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      await safeKvSet(ipKey, currentIpCount + 1);
+      await bumpCounter(ipKey);
       await incrementIpQuotaCookie();
     }
 
@@ -281,20 +273,10 @@ export async function POST(req: NextRequest) {
     }
 
     const isPremium = !!isPremiumUser; // Check premium status sent from client
-    if (isDemoMode && !isPremium) {
-      const ipKey = `reroom-ai:ip:${ip}`;
-      const googleKey = finalUserIdentifier ? `reroom-ai:google:${finalUserIdentifier}` : null;
 
-      const currentIpCount = await safeKvGet(ipKey);
-      const currentGoogleCount = googleKey ? (await safeKvGet(googleKey)) : 0;
-
-      if (currentIpCount >= 50 || currentGoogleCount >= 50) {
-        return NextResponse.json(
-          { error: '無料体験枠（通算5回）をすべて消費しました。引き続きご利用いただくには有料プランをご検討ください。' },
-          { status: 429 }
-        );
-      }
-    }
+    // The allowance is checked once, above: 10 for a signed-in account, 5 for a guest. A second
+    // check used to sit here with a limit of its own, and it ran after the credit had already been
+    // deducted -- when the two disagreed it cost a generation that never arrived.
 
     let mimeType = 'image/jpeg';
     let base64Image = image;
@@ -455,26 +437,10 @@ Photorealistic 8K resolution, Architectural Digest magazine standard, vivid phot
 
     if (isDemoMode && !isPremium) {
       // IP address rate limiting with 72-hour reset (259200 seconds)
-      const ipKey = `reroom-ai:ip:${ip}`;
-      const currentIpCount = await safeKvGet(ipKey);
-      if (currentIpCount === 0) {
-        await safeKvSet(ipKey, 1, { ex: 72 * 60 * 60 });
-      } else {
-        const ttl = await safeKvTtl(ipKey);
-        await safeKvSet(ipKey, currentIpCount + 1, ttl > 0 ? { ex: ttl } : { ex: 72 * 60 * 60 });
-      }
-
-      // Google account rate limiting with 72-hour reset
-      if (finalUserIdentifier) {
-        const googleKey = `reroom-ai:google:${finalUserIdentifier}`;
-        const currentGoogleCount = await safeKvGet(googleKey);
-        if (currentGoogleCount === 0) {
-          await safeKvSet(googleKey, 1, { ex: 72 * 60 * 60 });
-        } else {
-          const ttl = await safeKvTtl(googleKey);
-          await safeKvSet(googleKey, currentGoogleCount + 1, ttl > 0 ? { ex: ttl } : { ex: 72 * 60 * 60 });
-        }
-      }
+      // Same keys as the gate above. These used to be spelled "reroom-ai:" here and "reroom_ai:"
+      // there, so one person was counted in two separate places that never saw each other.
+      await bumpCounter(IP_QUOTA_KEY(ip));
+      if (finalUserIdentifier) await bumpCounter(GOOGLE_QUOTA_KEY(finalUserIdentifier));
 
       // PRO 회원 생성 기록 업데이트 (누적 횟수 증가 및 최종 생성 시각 업데이트)
       if (isProUser) {
