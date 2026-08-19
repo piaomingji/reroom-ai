@@ -434,13 +434,9 @@ Photorealistic 8K resolution, Architectural Digest magazine standard, vivid phot
       await incrementIpQuotaCookie();
     }
 
+    // Counting happens once, just above. It used to be repeated here as well, which charged two
+    // uses for every generation.
     if (isDemoMode && !isPremium) {
-      // IP address rate limiting with 72-hour reset (259200 seconds)
-      // Same keys as the gate above. These used to be spelled "reroom-ai:" here and "reroom_ai:"
-      // there, so one person was counted in two separate places that never saw each other.
-      await bumpCounter(IP_QUOTA_KEY(ip));
-      if (finalUserIdentifier) await bumpCounter(GOOGLE_QUOTA_KEY(finalUserIdentifier));
-
       // PRO 회원 생성 기록 업데이트 (누적 횟수 증가 및 최종 생성 시각 업데이트)
       if (isProUser) {
         const record = proUsageTracker.get(trackingKey);
