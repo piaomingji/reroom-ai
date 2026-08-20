@@ -874,7 +874,9 @@ export default function Studio() {
                     {!byokMode && (
                       <div className="flex justify-between items-center text-xs font-semibold text-ink-soft bg-paper-raised px-4 py-3 rounded-xl border border-line select-none">
                         <span>会員ステータス:</span>
-                        {user ? (
+                        {user && (user.plan === 'pro' || user.plan === 'unlimited') ? (
+                          <span className="text-clay font-bold animate-pulse">Proプラン（使い放題）</span>
+                        ) : user ? (
                           <span className="text-ink font-bold text-ink-strong">会員特典クレジット（残り {user.credits}回）</span>
                         ) : userPlan === 'pro' ? (
                           <span className="text-clay font-bold animate-pulse">PROプラン（使い放題）</span>
