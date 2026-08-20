@@ -159,116 +159,173 @@ async function generateArticle(selectedTopic) {
   return JSON.parse(textContent);
 }
 
-// 記事の内容に沿ったアイキャッチ画像を生成・ダウンロードし、必ずローカル保存する関数
+// ===================== アイキャッチ画像の生成 =====================
+// 2026-08 変更点:
+//   旧 imagen-3.0-generate-002 は Google 側で提供終了（後継の imagen-4.0 系も
+//   2026-08-17 に提供終了）。そのため毎日の生成が失敗し、記事と無関係な
+//   Unsplash 画像や低解像度の代替画像が公開されていた。
+//   → Nano Banana 系（gemini-3-pro-image / gemini-3.1-flash-image）に移行し、
+//     低品質なフォールバックは全廃した。画像が作れなければ記事も追加しない。
+const IMAGE_MODELS = ['gemini-3-pro-image', 'gemini-3.1-flash-image'];
+const ATTEMPTS_PER_MODEL = 2;
+const MIN_IMAGE_BYTES = 30000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// generateContent 形式のレスポンスから画像バイト列を取り出す
+function pickInlineImage(response) {
+  const parts = response?.candidates?.[0]?.content?.parts ?? [];
+  for (const part of parts) {
+    const data = part?.inlineData?.data ?? part?.inline_data?.data;
+    if (data) return Buffer.from(data, 'base64');
+  }
+  return null;
+}
+
+// interactions 形式のレスポンスから画像バイト列を取り出す
+function pickInteractionImage(interaction) {
+  const direct = interaction?.output_image?.data ?? interaction?.outputImage?.data;
+  if (direct) return Buffer.from(direct, 'base64');
+  for (const step of interaction?.steps ?? []) {
+    for (const block of step?.content ?? []) {
+      const isImage = block?.type === 'image' ||
+        (typeof block?.mime_type === 'string' && block.mime_type.startsWith('image/'));
+      if (isImage && block?.data) return Buffer.from(block.data, 'base64');
+    }
+  }
+  return null;
+}
+
+// 1モデルで1回だけ画像生成を試みる（新旧2つのAPI形式に対応）
+async function renderImage(ai, model, prompt) {
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseModalities: ['IMAGE'],
+        imageConfig: { aspectRatio: '16:9', imageSize: '2K' }
+      }
+    });
+    const buffer = pickInlineImage(response);
+    if (buffer && buffer.length > MIN_IMAGE_BYTES) return buffer;
+    console.log(`  [${model}] generateContent: 画像が返りませんでした`);
+  } catch (error) {
+    console.log(`  [${model}] generateContent 失敗: ${error.message}`);
+  }
+
+  if (typeof ai.interactions?.create === 'function') {
+    try {
+      const interaction = await ai.interactions.create({
+        model,
+        input: prompt,
+        response_format: {
+          type: 'image',
+          mime_type: 'image/jpeg',
+          aspect_ratio: '16:9',
+          image_size: '2K'
+        }
+      });
+      const buffer = pickInteractionImage(interaction);
+      if (buffer && buffer.length > MIN_IMAGE_BYTES) return buffer;
+      console.log(`  [${model}] interactions: 画像が返りませんでした`);
+    } catch (error) {
+      console.log(`  [${model}] interactions 失敗: ${error.message}`);
+    }
+  }
+
+  return null;
+}
+
+// ブログ表示用の画像圧縮
+// 生成直後の画像は 2752x1536・3MB 前後あり、ブログの読み込みが重くなる。
+// 幅1600pxまで縮小し、品質82のJPEGに変換して 300KB 前後まで落とす（見た目はほぼ変わらない）。
+// sharp が入っていない環境では圧縮せずそのまま保存する（生成自体は止めない）。
+const MAX_IMAGE_WIDTH = 1600;
+const JPEG_QUALITY = 82;
+
+async function compressJpeg(buffer) {
+  try {
+    const sharp = (await import('sharp')).default;
+    const output = await sharp(buffer)
+      .rotate()
+      .resize({ width: MAX_IMAGE_WIDTH, withoutEnlargement: true })
+      .jpeg({ quality: JPEG_QUALITY, mozjpeg: true, progressive: true })
+      .toBuffer();
+    if (output.length > 0 && output.length < buffer.length) {
+      console.log(`  圧縮: ${Math.round(buffer.length / 1024)}KB -> ${Math.round(output.length / 1024)}KB`);
+      return output;
+    }
+    return buffer;
+  } catch (error) {
+    console.log(`  警告: 画像を圧縮できませんでした（npm install sharp が必要です）: ${error.message}`);
+    return buffer;
+  }
+}
+
+// pro → flash の順に、各モデル2回ずつ試す。すべて駄目なら例外を投げる（＝記事を追加しない）
+async function renderImageWithFallback(ai, prompt) {
+  for (const model of IMAGE_MODELS) {
+    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
+      console.log(`画像生成を試行中: ${model} (${attempt}/${ATTEMPTS_PER_MODEL})`);
+      const buffer = await renderImage(ai, model, prompt);
+      if (buffer) {
+        console.log(`画像生成に成功しました: ${model} (${Math.round(buffer.length / 1024)}KB)`);
+        return compressJpeg(buffer);
+      }
+      if (attempt < ATTEMPTS_PER_MODEL) await sleep(4000);
+    }
+  }
+  throw new Error(
+    'アイキャッチ画像を生成できませんでした。品質の低い代替画像は使用しない方針のため、今回の記事は追加しません。'
+  );
+}
+
+// 記事の内容に沿ったアイキャッチ画像を生成する（必ず Buffer を返す。作れなければ例外）
 async function generateImage(title, excerpt, defaultEyecatch, keywords, existingEyecatches, slug) {
   console.log(`Generating matching eyecatch image for slug: ${slug}`);
+  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false });
 
   const promptForImagePrompt = `
-You are an expert prompt engineer for AI image generators (Imagen 3).
-Create a highly detailed, descriptive English prompt for generating an eye-catching, high-converting, professional blog cover image that perfectly matches the following article:
+You are an expert prompt engineer for Google's Gemini image model (Nano Banana).
+Write ONE detailed English prompt for a 16:9 blog cover photograph that matches this Japanese article about interior wallpaper (壁紙・クロス).
 
 Article Title: ${title}
 Article Excerpt: ${excerpt}
+Keywords: ${(keywords || []).join(', ')}
 
-MANDATORY REQUIREMENTS FOR HIGH-CTR CLICK-WORTHY IMAGES:
-1. CRITICAL ROOM TYPE MATCHING: Pay strict attention to the specific room/area in the Article Title and Excerpt. If title mentions '玄関' (entrance/foyer), describe a luxury Japanese genkan entrance foyer. If '和室' (tatami room), describe a Japanese modern tatami room. If '洗面所' or 'トイレ' (washroom/powder room), describe a stylish lavatory. If '子ども部屋' (kids room), describe a kids room. If 'リビング', describe a living room. DO NOT generate a living room if the article is about an entrance, toilet, or tatami room!
-2. MUST be photorealistic, ultra-high quality, 8k resolution luxury architectural interior photography of the target room in Japan.
-2. Must feature warm, inviting ambient cove lighting, elegant furniture, cozy atmosphere, and high-end Architectural Digest magazine aesthetic.
-3. NO uncanny artifacts, NO text, NO empty, cold, plain, or monotonous bare rooms. ALWAYS include vibrant color harmony, warm inviting ambient lighting, stylish house plants, rich wallpaper textures, and high-end luxury feel.
-4. Specify realistic lighting (e.g., "warm golden hour daylight", "soft cozy indoor LED lighting") and high-end camera details (e.g., "sharp focus, Architectural Digest style, detailed wallpaper texture, 8k resolution").
-5. Do NOT include any text, overlays, UI elements, signs, or borders in the image.
-6. Output ONLY the English prompt text, without any introductory or concluding remarks.
+RULES
+1. THE ROOM MUST MATCH THE ARTICLE. Read the title carefully and name the exact room in the prompt:
+   - 玄関 -> Japanese entrance foyer (genkan) with a step-up floor and shoe cabinet
+   - 和室 -> Japanese tatami room with shoji screens
+   - 洗面所 / トイレ / 水回り -> stylish powder room or lavatory
+   - 子ども部屋 -> children's bedroom
+   - 寝室 -> bedroom
+   - キッチン -> kitchen
+   - 書斎 / テレワーク / 勉強部屋 -> home office or study
+   - リビング -> living room
+   - 天井 -> a room shot composed so the ceiling surface is clearly visible
+   NEVER fall back to a generic living room when the article is about another room.
+2. If the article is about a specific wallpaper property (防音, 消臭・調湿, アクセントクロス, 北欧, インダストリアル, ペット対応 etc.), make that wall or ceiling finish the visual focus of the photo.
+3. Describe a photorealistic interior architectural photograph of a real Japanese home. Demand: straight vertical lines, correct perspective, tack-sharp focus, physically plausible furniture, no warped or melted objects, no duplicated legs or windows, no impossible geometry.
+4. Warm inviting lighting, tasteful furniture, a few houseplants, rich visible wallpaper texture, the quality level of an Architectural Digest or 住宅雑誌 feature.
+5. The image must contain NO text, NO Japanese characters, NO letters, NO logos, NO watermarks, NO UI elements, NO borders, and NO people.
+6. Output ONLY the prompt text, with no preamble or closing remarks.
 `;
 
-  try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false });
-    const promptResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: promptForImagePrompt
-    });
+  const promptResponse = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: promptForImagePrompt
+  });
 
-    const imagePrompt = promptResponse.text.trim();
-    console.log(`Generated Image Prompt: ${imagePrompt}`);
+  const imagePrompt = promptResponse.text.trim();
+  console.log(`Generated Image Prompt: ${imagePrompt}`);
 
-    console.log("Attempting to generate image via Imagen 3 (imagen-3.0-generate-002)...");
-    const imageResponse = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
-      prompt: `${imagePrompt}, luxury modern interior photography, high quality, 8k, architectural digest style, warm natural lighting`,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: "16:9",
-        outputMimeType: "image/jpeg"
-      }
-    });
+  const finalPrompt = `${imagePrompt}
 
-    if (imageResponse && imageResponse.generatedImages && imageResponse.generatedImages.length > 0) {
-      const base64Image = imageResponse.generatedImages[0].image.imageBytes;
-      console.log("Successfully generated image via Imagen 3!");
-      return Buffer.from(base64Image, "base64");
-    }
-  } catch (e) {
-    console.log("Gemini image generation skipped/failed:", e.message);
-  }
+Photorealistic interior architectural photography, 16:9 horizontal composition, natural daylight combined with warm accent lighting, high dynamic range, tack-sharp focus throughout, accurate straight architectural lines. Absolutely no text, letters, characters, logos or watermarks anywhere in the image.`;
 
-  // Fallback 1: Pollinations AI
-  try {
-    console.log("Attempting Pollinations AI image generation...");
-    const prompt = encodeURIComponent(`luxurious modern high-end architectural interior photography of stylish residential room in Japan, ${slug.replace(/-/g, " ")}, warm cozy lighting, architectural digest style, 8k resolution`);
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=675&nologo=true`;
-    const res = await fetch(pollinationsUrl, { signal: AbortSignal.timeout(8000) });
-    if (res.ok) {
-      const buffer = Buffer.from(await res.arrayBuffer());
-      if (buffer.length > 5000) {
-        console.log(`Successfully generated image via Pollinations AI (${buffer.length} bytes)`);
-        return buffer;
-      }
-    }
-  } catch (e) {
-    console.log("Pollinations AI image generation skipped/failed:", e.message);
-  }
-
-  // Fallback 2: High quality Unsplash interior photos
-  const photoIds = [
-    "photo-1616486338812-3dadae4b4ace", "photo-1618221195710-dd6b41faaea6", "photo-1586023492125-27b2c045efd7", "photo-1616046229478-9901c5536a45",
-    "photo-1598928506311-c55ded91a20c", "photo-1600210492486-724fe5c67fb0", "photo-1600607687939-ce8a6c25118c", "photo-1600607687920-4e2a09cf159d",
-    "photo-1617806118233-18e1db207faf", "photo-1502672260266-1c1ef2d93688", "photo-1554995207-c18c203602cb", "photo-1583847268964-b28dc8f51f92",
-    "photo-1513694203232-719a280e022f", "photo-1484154218962-a197022b5858", "photo-1505691938895-1758d7feb511", "photo-1522771739844-6a9f6d5f14af"
-  ];
-  let hash = 0;
-  for (let i = 0; i < slug.length; i++) {
-    hash = slug.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const photoId = photoIds[Math.abs(hash) % photoIds.length];
-  const unsplashUrl = `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=1200&q=80`;
-
-  try {
-    console.log(`Downloading fallback interior photo from Unsplash: ${photoId}`);
-    const res = await fetch(unsplashUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-      },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (res.ok) {
-      const buffer = Buffer.from(await res.arrayBuffer());
-      if (buffer.length > 5000) {
-        console.log(`Downloaded image buffer from Unsplash (${buffer.length} bytes)`);
-        return buffer;
-      }
-    }
-  } catch (e) {
-    console.log("Unsplash image download skipped/failed:", e.message);
-  }
-
-  // Fallback 3: Local file
-  const publicBlogDir = path.join(process.cwd(), "public/blog");
-  const localFiles = fs.readdirSync(publicBlogDir).filter(f => f.endsWith(".png") || f.endsWith(".jpg"));
-  if (localFiles.length > 0) {
-    const selectedFile = localFiles[Math.abs(hash) % localFiles.length];
-    return fs.readFileSync(path.join(publicBlogDir, selectedFile));
-  }
-
-  throw new Error("No eyecatch image source available");
+  return renderImageWithFallback(ai, finalPrompt);
 }
 
 async function main() {
@@ -347,17 +404,6 @@ async function main() {
     const newContent = fileContent.slice(0, insertIndex) + jsonString + ',\n  ' + fileContent.slice(insertIndex);
     
     fs.writeFileSync(filePath, newContent, 'utf-8');
-    // app/blog/page.tsx のリビルドタイムスタンプを更新して Vercel の静的ページ再構築を確実にトリガー
-    const blogPagePath = path.join(process.cwd(), 'app', 'blog', 'page.tsx');
-    if (fs.existsSync(blogPagePath)) {
-      let blogPageContent = fs.readFileSync(blogPagePath, 'utf-8');
-      blogPageContent = blogPageContent.replace(
-        /\/\/ Rebuild trigger: .*/,
-        `// Rebuild trigger: ${new Date().toISOString()}`
-      );
-      fs.writeFileSync(blogPagePath, blogPageContent, 'utf-8');
-      console.log('Updated app/blog/page.tsx rebuild timestamp');
-    }
     console.log('Successfully added new article to lib/blog.ts');
   } catch (error) {
     console.error('Failed to run blog generation:', error);
