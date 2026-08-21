@@ -76,38 +76,6 @@ const responseSchema = {
   required: ['slug', 'title', 'excerpt', 'keywords', 'contentHtml']
 };
 
-// Gemini API は混雑時に 503 / 429 / 500 を返すことがある。
-// （2026-08-21、Studio AI の自動生成が「This model is currently experiencing high demand」で
-//   1回で諦めて失敗した。記事本文を書くステップには再試行が無かった。）
-// 一時的な失敗なら待って自動で試し直す。指定回数を使い切ったときだけ例外にする。
-const API_RETRIES = 4;
-const RETRYABLE_HTTP = [408, 429, 500, 502, 503, 504];
-
-function isRetryableApiError(error) {
-  const status = Number(error?.status ?? error?.code ?? error?.response?.status);
-  if (RETRYABLE_HTTP.includes(status)) return true;
-  const text = `${error?.message ?? ''} ${error?.status ?? ''}`;
-  return /UNAVAILABLE|RESOURCE_EXHAUSTED|INTERNAL|DEADLINE_EXCEEDED|high demand|overloaded|rate limit|try again|ECONNRESET|ETIMEDOUT|fetch failed/i.test(text);
-}
-
-// label は失敗時のログに出す作業名
-async function withRetry(label, fn) {
-  let lastError;
-  for (let attempt = 1; attempt <= API_RETRIES; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      if (!isRetryableApiError(error) || attempt === API_RETRIES) throw error;
-      const waitMs = Math.min(60000, 15000 * attempt);
-      console.log(`  ${label}: 一時的なエラー (${attempt}/${API_RETRIES}) ${String(error?.message ?? error).slice(0, 200)}`);
-      console.log(`  ${Math.round(waitMs / 1000)}秒待ってから再試行します...`);
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-    }
-  }
-  throw lastError;
-}
-
 // 既存の記事と重複しない新しいトピックをGeminiで自動生成する関数
 async function generateUniqueTopic(existingTitles, existingKeywords) {
   const prompt = `
@@ -134,8 +102,7 @@ ${existingTitles.map(t => `- ${t}`).join('\n')}
 
   console.log('Generating a completely new, unique topic using Gemini...');
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  const response = await withRetry('テーマの生成', () =>
-    ai.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
@@ -149,8 +116,7 @@ ${existingTitles.map(t => `- ${t}`).join('\n')}
         required: ['keyword', 'titleHint']
       }
     }
-  })
-  );
+  });
 
   const generated = JSON.parse(response.text);
   console.log(`Generated Dynamic Topic: [Keyword: ${generated.keyword}] [TitleHint: ${generated.titleHint}]`);
@@ -177,16 +143,14 @@ async function generateArticle(selectedTopic) {
 `;
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  const response = await withRetry('記事本文の生成', () =>
-    ai.models.generateContent({
+  const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',
       responseSchema: responseSchema,
     }
-  })
-  );
+  });
 
   const textContent = response.text;
   if (!textContent) {
@@ -309,7 +273,7 @@ async function renderImageWithFallback(ai, prompt) {
         console.log(`画像生成に成功しました: ${model} (${Math.round(buffer.length / 1024)}KB)`);
         return compressJpeg(buffer);
       }
-      if (attempt < ATTEMPTS_PER_MODEL) await sleep(20000);
+      if (attempt < ATTEMPTS_PER_MODEL) await sleep(4000);
     }
   }
   throw new Error(
@@ -317,10 +281,63 @@ async function renderImageWithFallback(ai, prompt) {
   );
 }
 
+// 同じような写真ばかり並ばないよう、記事ごとにインテリアの系統・アングル・光・色調を変える
+// 以前は「ベージュのミニマルなリビング・左に大きな窓・観葉植物」ばかりが並んでしまっていた。
+// 部屋の種類は記事のテーマで決まるので、それ以外の要素をここで変える。
+// 記事番号で順に割り当て、周期（6 / 5 / 7 / 6）が互いに素なので実質繰り返さない。
+const INTERIOR_STYLES = [
+  'Scandinavian: pale oak, white walls, simple soft textiles',
+  'Japanese modern (和モダン): tatami or wood, shoji screens, low furniture, restrained palette',
+  'hotel-like: layered lighting, dark wood, upholstered headboard or sofa, luxurious calm',
+  'industrial: exposed concrete or brick texture, black steel, aged leather',
+  'mid-century modern: walnut furniture, tapered legs, mustard and teal accents',
+  'natural / organic: linen, rattan, terracotta pots, plenty of texture'
+];
+
+const CAMERA_ANGLES = [
+  'a wide two-point-perspective corner view of the room',
+  'a straight-on one-point-perspective view of the main wall',
+  'a close, detailed view of the wallpaper texture with furniture softly out of focus',
+  'a view framed through an open doorway into the room',
+  'a low camera angle that shows more of the ceiling'
+];
+
+const LIGHT_MOODS = [
+  'bright midday daylight flooding in from a large window',
+  'warm low afternoon sun casting long shadows across the wall',
+  'soft even light on an overcast day, gentle and shadowless',
+  'evening, lit only by warm lamps and indirect cove lighting',
+  'early morning light, cool and fresh',
+  'a moody dim room with a single pool of warm light',
+  'backlit against a window, with the room in soft silhouette'
+];
+
+const COLOUR_TONES = [
+  'warm neutral: cream, oatmeal, honey wood',
+  'cool and calm: soft greys, pale blue, white oak',
+  'deep and moody: charcoal, forest green, dark walnut',
+  'soft pastel: powder blue, blush, pale mint',
+  'earthy: terracotta, olive, clay, warm brown',
+  'high contrast: crisp white walls against near-black accents'
+];
+
+// sequence は「何本目の記事か」。連番なので隣り合う記事の絵柄が必ずずれる
+function pickVariation(sequence) {
+  const n = Math.abs(Math.trunc(Number(sequence) || 0));
+  return {
+    style: INTERIOR_STYLES[n % INTERIOR_STYLES.length],
+    camera: CAMERA_ANGLES[n % CAMERA_ANGLES.length],
+    light: LIGHT_MOODS[n % LIGHT_MOODS.length],
+    tone: COLOUR_TONES[n % COLOUR_TONES.length]
+  };
+}
+
 // 記事の内容に沿ったアイキャッチ画像を生成する（必ず Buffer を返す。作れなければ例外）
-async function generateImage(title, excerpt, defaultEyecatch, keywords, existingEyecatches, slug) {
+async function generateImage(title, excerpt, defaultEyecatch, keywords, existingEyecatches, slug, sequence) {
   console.log(`Generating matching eyecatch image for slug: ${slug}`);
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false });
+  const variation = pickVariation(sequence);
+  console.log(`  この記事の絵柄: ${variation.style} / ${variation.camera} / ${variation.light}`);
 
   const promptForImagePrompt = `
 You are an expert prompt engineer for Google's Gemini image model (Nano Banana).
@@ -330,30 +347,48 @@ Article Title: ${title}
 Article Excerpt: ${excerpt}
 Keywords: ${(keywords || []).join(', ')}
 
-RULES
-1. THE ROOM MUST MATCH THE ARTICLE. Read the title carefully and name the exact room in the prompt:
-   - 玄関 -> Japanese entrance foyer (genkan) with a step-up floor and shoe cabinet
-   - 和室 -> Japanese tatami room with shoji screens
-   - 洗面所 / トイレ / 水回り -> stylish powder room or lavatory
-   - 子ども部屋 -> children's bedroom
-   - 寝室 -> bedroom
-   - キッチン -> kitchen
-   - 書斎 / テレワーク / 勉強部屋 -> home office or study
-   - リビング -> living room
-   - 天井 -> a room shot composed so the ceiling surface is clearly visible
-   NEVER fall back to a generic living room when the article is about another room.
-2. If the article is about a specific wallpaper property (防音, 消臭・調湿, アクセントクロス, 北欧, インダストリアル, ペット対応 etc.), make that wall or ceiling finish the visual focus of the photo.
-3. Describe a photorealistic interior architectural photograph of a real Japanese home. Demand: straight vertical lines, correct perspective, tack-sharp focus, physically plausible furniture, no warped or melted objects, no duplicated legs or windows, no impossible geometry.
-4. Warm inviting lighting, tasteful furniture, a few houseplants, rich visible wallpaper texture, the quality level of an Architectural Digest or 住宅雑誌 feature.
-5. The image must contain NO text, NO Japanese characters, NO letters, NO logos, NO watermarks, NO UI elements, NO borders, and NO people.
-6. Output ONLY the prompt text, with no preamble or closing remarks.
+STEP 1 — THE ROOM MUST MATCH THE ARTICLE. Read the title carefully and name the exact room:
+  - 玄関 -> Japanese entrance foyer (genkan) with a step-up floor and shoe cabinet
+  - 和室 -> Japanese tatami room with shoji screens
+  - 洗面所 / トイレ / 水回り -> stylish powder room or lavatory
+  - 子ども部屋 -> children's bedroom
+  - 寝室 -> bedroom
+  - キッチン -> kitchen
+  - 書斎 / テレワーク / 勉強部屋 -> home office or study
+  - リビング -> living room
+  - 天井 -> a room composed so the ceiling surface is clearly visible
+  NEVER fall back to a generic living room when the article is about another room.
+  If the article is about a specific wallpaper property (防音, 消臭・調湿, アクセントクロス,
+  ペット対応, はがせる壁紙 etc.), make that wall finish the visual focus.
+
+STEP 2 — VARIATION FOR THIS ARTICLE. This matters as much as the room.
+This blog already has many cover photos and they were all turning out the same: a bright
+beige minimalist living room with a big window on the left and a potted plant.
+Do not produce that again. Unless STEP 1 requires otherwise, build this photo around:
+  - Interior style: ${variation.style}
+  - Camera:         ${variation.camera}
+  - Light:          ${variation.light}
+  - Colour tone:    ${variation.tone}
+Write the style, camera angle, lighting and colour palette explicitly into the prompt.
+If the article names its own style (北欧, 和モダン, ホテルライク, インダストリアル…),
+that wins over the variation style.
+
+QUALITY RULES
+1. Photorealistic interior architectural photography of a real Japanese home.
+   Straight vertical lines, correct perspective, tack-sharp focus, physically plausible
+   furniture. No warped or melted objects, no duplicated legs or windows, no impossible geometry.
+2. Tasteful furniture, rich visible wallpaper texture, the quality level of an
+   Architectural Digest or 住宅雑誌 feature.
+3. The image must contain NO text, NO Japanese characters, NO letters, NO logos,
+   NO watermarks, NO UI elements, NO borders and NO people.
+4. Output ONLY the prompt text, with no preamble or closing remarks.
 `;
 
   const promptResponse = await withRetry('画像プロンプトの生成', () =>
     ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: promptForImagePrompt
-  })
+      model: 'gemini-2.5-flash',
+      contents: promptForImagePrompt
+    })
   );
 
   const imagePrompt = promptResponse.text.trim();
@@ -361,7 +396,7 @@ RULES
 
   const finalPrompt = `${imagePrompt}
 
-Photorealistic interior architectural photography, 16:9 horizontal composition, natural daylight combined with warm accent lighting, high dynamic range, tack-sharp focus throughout, accurate straight architectural lines. Absolutely no text, letters, characters, logos or watermarks anywhere in the image.`;
+Photorealistic interior architectural photography, 16:9 horizontal composition, high dynamic range, tack-sharp focus throughout, accurate straight architectural lines. Absolutely no text, letters, characters, logos or watermarks anywhere in the image.`;
 
   return renderImageWithFallback(ai, finalPrompt);
 }
@@ -412,7 +447,8 @@ async function main() {
     if (!fs.existsSync(blogDir)) {
       fs.mkdirSync(blogDir, { recursive: true });
     }
-    const imageBuffer = await generateImage(article.title, article.excerpt, selectedTopic.defaultEyecatch, article.keywords, existingEyecatches, article.slug);
+    const imageBuffer = await generateImage(article.title, article.excerpt, selectedTopic.defaultEyecatch,
+      article.keywords, existingEyecatches, article.slug, existingSlugs.length);
     const imageFilename = `${article.slug}.jpg`;
     const imagePath = path.join(blogDir, imageFilename);
     
