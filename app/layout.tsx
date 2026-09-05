@@ -11,27 +11,27 @@ const notoSerif = Noto_Serif_JP({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://reroom.smart-ai-portal.com"),
-  title: "ミセルリフォーム - 理想の部屋生成AI | お部屋のリフォーム・模様替えシミュレーター",
+  title: "ReRoom AI - 理想の部屋生成AI | お部屋のリフォーム・模様替えシミュレーター",
   description:
     "お部屋の写真をアップロードして希望のスタイルを選ぶだけで、AIが約10秒で理想のリフォーム・模様替え完成予想図を作成。壁紙や床材の提案、提案カルテPDFの出力にも対応し、理想の空間づくりをスマートにします。",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ミセルリフォーム",
+    title: "ReRoom AI",
   },
   openGraph: {
-    title: "ミセルリフォーム - 理想の部屋生成AI | お部屋のリフォーム・模様替えシミュレーター",
+    title: "ReRoom AI - 理想の部屋生成AI | お部屋のリフォーム・模様替えシミュレーター",
     description:
       "お部屋の写真をアップロードしてスタイルを選ぶだけで、AIが約10秒で理想のリフォーム後の完成予想図を作成します。",
     url: "https://reroom.smart-ai-portal.com",
-    siteName: "ミセルリフォーム",
+    siteName: "ReRoom AI",
     images: [
       {
         url: "/living_room_after.png",
         width: 1200,
         height: 1200,
-        alt: "ミセルリフォーム 和モダンリフォーム提案ショーケース",
+        alt: "ReRoom AI 和モダンリフォーム提案ショーケース",
       },
     ],
     locale: "ja_JP",

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
             price_data: {
               currency: 'jpy',
               product_data: {
-                name: 'ミセルリフォーム Proプラン (月額サブスク)',
+                name: 'ReRoom AI Proプラン (月額サブスク)',
                 description: '完成予想図の生成数無制限、優先高速処理',
               },
               unit_amount: 4980,
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
             price_data: {
               currency: 'jpy',
               product_data: {
-                name: 'ミセルリフォーム 法人プラン (月額サブスク)',
+                name: 'ReRoom AI 法人プラン (月額サブスク)',
                 description: '最大5名まで共有利用可能、1日の合計生成上限500回',
               },
               unit_amount: 19800,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
             price_data: {
               currency: 'jpy',
               product_data: {
-                name: 'ミセルリフォーム 20回生成追加パック',
+                name: 'ReRoom AI 20回生成追加パック',
                 description: '単発で利用枠を20回分追加します',
               },
               unit_amount: 1480,

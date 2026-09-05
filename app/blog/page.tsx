@@ -5,7 +5,7 @@ import { blogPosts } from '@/lib/blog';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'お部屋リフォームお役立ちブログ - ミセルリフォーム',
+  title: 'お部屋リフォームお役立ちブログ - ReRoom AI',
   description: 'お部屋の壁紙・クロス選びやシミュレーション活用術など、理想のインテリアづくりのためのお役立ち情報を発信します。',
 };
 

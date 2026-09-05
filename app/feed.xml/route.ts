@@ -32,7 +32,7 @@ export async function GET() {
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
-    <title>ミセルリフォーム - お部屋リフォームお役立ちブログ</title>
+    <title>ReRoom AI - お部屋リフォームお役立ちブログ</title>
     <link>${siteUrl}/blog</link>
     <description>お部屋の壁紙・クロス選びやシミュレーション活用術などのお役立ち情報を発信します。</description>
     <language>ja</language>

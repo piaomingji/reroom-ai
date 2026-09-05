@@ -83,7 +83,7 @@ export default function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-10 text-xs text-ink-faint">
         <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-baseline sm:gap-2">
           <span className="font-display text-sm font-bold text-ink text-center">
-            ミセルリフォーム
+            ReRoom AI
           </span>
           <span className="text-center">© 2026 All Rights Reserved.</span>
         </div>
@@ -160,7 +160,7 @@ export default function Footer() {
               {modalType === 'terms' ? (
                 <>
                   <p className="font-semibold text-ink">第1条（適用）</p>
-                  <p>本規約は、ミセルリフォーム（以下「当サービス」）の提供条件および当サービスと利用者との間の権利義務関係を定めるものです。</p>
+                  <p>本規約は、ReRoom AI（以下「当サービス」）の提供条件および当サービスと利用者との間の権利義務関係を定めるものです。</p>
 
                   <p className="font-semibold text-ink">第2条（利用制限およびアカウント管理）</p>
                   <p>1. 当サービスは、登録不要で体験回数を初回通算5回まで無料で提供します。</p>

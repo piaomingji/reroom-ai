@@ -19,9 +19,9 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-85">
-            <img src="/reroom_ai_logo.png" alt="ミセルリフォーム Logo" className="h-7 sm:h-9 w-auto object-contain" />
+            <img src="/reroom_ai_logo.png" alt="ReRoom AI Logo" className="h-7 sm:h-9 w-auto object-contain" />
             <span className="font-display text-base sm:text-lg font-bold tracking-tight text-ink">
-              ミセルリフォーム
+              ReRoom AI
             </span>
           </Link>
         </div>

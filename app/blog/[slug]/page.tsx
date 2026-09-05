@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps) {
   const post = blogPosts.find((p) => p.slug === slug);
   if (!post) {
     return {
-      title: '記事が見つかりません - ミセルリフォーム',
+      title: '記事が見つかりません - ReRoom AI',
     };
   }
 
@@ -31,14 +31,14 @@ export async function generateMetadata({ params }: PageProps) {
     : `${siteUrl}${post.eyecatch}`;
 
   return {
-    title: `${post.title} - ミセルリフォーム`,
+    title: `${post.title} - ReRoom AI`,
     description: post.excerpt,
     keywords: post.keywords.join(', '),
     alternates: {
       canonical: `${siteUrl}/blog/${post.slug}`,
     },
     openGraph: {
-      title: `${post.title} - ミセルリフォーム`,
+      title: `${post.title} - ReRoom AI`,
       description: post.excerpt,
       images: [
         {
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps) {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${post.title} - ミセルリフォーム`,
+      title: `${post.title} - ReRoom AI`,
       description: post.excerpt,
       images: [imageUrl],
     }
@@ -85,14 +85,14 @@ export default async function BlogPostPage({ params }: PageProps) {
               keywords: post.keywords.join(', '),
               inLanguage: 'ja',
               mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteUrl}/blog/${post.slug}` },
-              author: { '@type': 'Organization', name: 'ミセルリフォーム', url: siteUrl },
-              publisher: { '@type': 'Organization', name: 'ミセルリフォーム', url: siteUrl },
+              author: { '@type': 'Organization', name: 'ReRoom AI', url: siteUrl },
+              publisher: { '@type': 'Organization', name: 'ReRoom AI', url: siteUrl },
             },
             {
               '@type': 'BreadcrumbList',
               '@id': `${siteUrl}/blog/${post.slug}#breadcrumb`,
               itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'ミセルリフォーム', item: siteUrl },
+                { '@type': 'ListItem', position: 1, name: 'ReRoom AI', item: siteUrl },
                 { '@type': 'ListItem', position: 2, name: 'お部屋リフォームお役立ちブログ', item: `${siteUrl}/blog` },
                 { '@type': 'ListItem', position: 3, name: post.title, item: `${siteUrl}/blog/${post.slug}` },
               ],

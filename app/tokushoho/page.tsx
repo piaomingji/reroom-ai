@@ -2,7 +2,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export const metadata = {
-  title: '特定商取引法に基づく表記 - ミセルリフォーム',
+  title: '特定商取引法に基づく表記 - ReRoom AI',
 };
 
 export default function TokushohoPage() {
@@ -15,7 +15,7 @@ export default function TokushohoPage() {
             特定商取引法に基づく表記
           </h1>
           <p className="mt-4 text-center text-sm text-ink-soft">
-            ミセルリフォームのサービスに関する特定商取引法に基づく表記です。
+            ReRoom AIのサービスに関する特定商取引法に基づく表記です。
           </p>
 
           <div className="mt-12 overflow-hidden rounded-2xl border border-line bg-paper shadow-sm">
@@ -23,7 +23,7 @@ export default function TokushohoPage() {
               <div className="grid grid-cols-1 p-6 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-bold text-ink">事業者名</dt>
                 <dd className="mt-1 text-ink-soft sm:col-span-2 sm:mt-0">
-                  ミセルリフォーム運営事務局（個人事業主）<br />
+                  ReRoom AI運営事務局（個人事業主）<br />
                   <span className="text-xs text-ink-faint">
                     ※その他事業者情報（所在地・電話番号等）については、以下のお問い合わせ窓口よりご請求いただいた場合、遅滞なく電子メール等で開示いたします。
                   </span>
